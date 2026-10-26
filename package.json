@@ -8,7 +8,8 @@
     "start": "electron .",
     "test": "node --test test.cjs",
     "test:ui": "node scripts/test-ui.cjs",
-    "build": "node scripts/build.cjs"
+    "build": "node scripts/build.cjs",
+    "postinstall": "node node_modules/electron/install.js"
   },
   "devDependencies": {
     "electron": "45.0.0"
