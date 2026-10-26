@@ -1,6 +1,6 @@
 {
   "name": "wuwa-offline-companion",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "private": true,
   "description": "Personal offline desktop companion",
   "main": "main.cjs",

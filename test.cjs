@@ -28,3 +28,32 @@ test('504张互动表情均引用原始emote素材，图鉴缩略图使用独立
  const manifest=require('./asset-manifest.json');
  for(const it of items.filter(x=>x.type==='emote')){assert.match(manifest[path.basename(it.image)],/\/emote\//);assert.notEqual(it.image,it.thumbnail);}
 });
+
+test('满5个表情可指定位置替换，已装备表情交换位置，未拥有不能替换',()=>{
+ const s=core.initial(items),old=[...s.emotes],next=items.find(x=>x.starter&&x.type==='emote'&&!old.includes(x.id)).id;
+ core.replaceEmote(s,items,next,2);assert.equal(s.emotes[2],next);assert.equal(s.emotes.length,5);assert.equal(new Set(s.emotes).size,5);
+ core.replaceEmote(s,items,s.emotes[0],4);assert.equal(s.emotes[4],old[0]);assert.equal(s.emotes[0],old[4]);
+ const before=JSON.stringify(s);assert.throws(()=>core.replaceEmote(s,items,'emote:missing',1));assert.equal(JSON.stringify(s),before);
+});
+test('升级自动继承当前便携版并备份，之后换解压目录仍使用同一存档',async()=>{
+ const storage=require('./storage.cjs'),root=fs.mkdtempSync(path.join(__dirname,'qa-data-unit-'));
+ try{const legacy=path.join(root,'old'),dataDir=path.join(root,'profile');fs.mkdirSync(path.join(legacy,'data'),{recursive:true});
+ const s=core.initial(items);core.draw(s,items,10,()=>.95);s.count=521;fs.writeFileSync(path.join(legacy,'data/collection.json'),JSON.stringify(s));
+ const first=storage.initProfile({dataDir,portableDir:legacy,items});assert.deepEqual(first.state,s);assert(first.migratedFrom);assert.equal(fs.readdirSync(path.join(dataDir,'migration-backups')).length,1);
+ const write=storage.createWriter(path.join(dataDir,'collection.json'));first.state.count=522;await write(first.state);
+ const second=storage.initProfile({dataDir,portableDir:path.join(root,'new-version'),items});assert.equal(second.state.count,522);assert.deepEqual(second.state.owned,s.owned);assert.equal(second.migratedFrom,undefined);
+ assert.equal(JSON.parse(fs.readFileSync(path.join(legacy,'data/collection.json'))).count,521);
+ }finally{if(!root.startsWith(path.resolve(__dirname)+path.sep+'qa-data-unit-'))throw Error('Unsafe cleanup');fs.rmSync(root,{recursive:true});}
+});
+test('全新解压目录自动查找Downloads旁旧版，保留抽取、收藏与搭配',()=>{
+ const storage=require('./storage.cjs'),root=fs.mkdtempSync(path.join(__dirname,'qa-data-unit-'));
+ try{const downloads=path.join(root,'Downloads'),legacy=path.join(downloads,'WuwaTappo-Offline-42keys-v1.0.2','WuwaTappo-Offline-1.0.2','data');fs.mkdirSync(legacy,{recursive:true});
+ const s=core.initial(items);s.draws=450;s.favorites=[s.character];s.presets=[{id:'old',name:'旧搭配',character:s.character,accessory:s.accessory,emotes:s.emotes}];fs.writeFileSync(path.join(legacy,'collection.json'),JSON.stringify(s));
+ const migrated=storage.initProfile({dataDir:path.join(root,'profile'),portableDir:path.join(downloads,'new'),searchRoots:[downloads],items});assert.deepEqual(migrated.state,s);
+ }finally{if(!root.startsWith(path.resolve(__dirname)+path.sep+'qa-data-unit-'))throw Error('Unsafe cleanup');fs.rmSync(root,{recursive:true});}
+});
+test('异步存档按顺序落盘，连续保存不会覆盖较新的状态',async()=>{
+ const storage=require('./storage.cjs'),root=fs.mkdtempSync(path.join(__dirname,'qa-data-unit-'));
+ try{const file=path.join(root,'collection.json'),write=storage.createWriter(file),s=core.initial(items),jobs=[];for(let i=0;i<20;i++){s.count=i;jobs.push(write(s));}await Promise.all(jobs);assert.equal(storage.readSave(file).raw.count,19);assert.equal(storage.readSave(file+'.bak').raw.count,18);
+ }finally{if(!root.startsWith(path.resolve(__dirname)+path.sep+'qa-data-unit-'))throw Error('Unsafe cleanup');fs.rmSync(root,{recursive:true});}
+});

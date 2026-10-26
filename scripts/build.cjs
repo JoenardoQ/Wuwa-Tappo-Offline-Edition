@@ -9,11 +9,12 @@ fs.mkdirSync(path.dirname(out),{recursive:true});fs.cpSync(runtime,out,{recursiv
 fs.renameSync(path.join(out,'electron.exe'),path.join(out,'WuwaTappo-Offline.exe'));
 const defaultApp=path.join(out,'resources/default_app.asar');if(fs.existsSync(defaultApp))fs.unlinkSync(defaultApp);
 const appDir=path.join(out,'resources/app');fs.mkdirSync(appDir,{recursive:true});
-const files=['main.cjs','preload.cjs','core.cjs','pet.html','pet.css','pet.js','emotions.js','studio.html','studio.css','studio.js','catalog.json','asset-manifest.json','package.json','qa.cjs'];
+const files=['main.cjs','preload.cjs','core.cjs','storage.cjs','pet.html','pet.css','pet.js','emotions.js','studio.html','studio.css','studio.js','catalog.json','asset-manifest.json','package.json','qa.cjs'];
 for(const file of files)fs.copyFileSync(path.join(root,file),path.join(appDir,file));
 for(const dir of ['assets','original-ui'])fs.cpSync(path.join(root,dir),path.join(appDir,dir),{recursive:true});
 for(const dependency of ['uiohook-napi','node-gyp-build'])fs.cpSync(path.join(root,'node_modules',dependency),path.join(appDir,'node_modules',dependency),{recursive:true});
 for(const file of ['README.md','THIRD_PARTY_NOTICES.md'])fs.copyFileSync(path.join(root,file),path.join(out,file));
 fs.copyFileSync(path.join(root,'LICENSE'),path.join(out,'LICENSE.project'));
+if(fs.existsSync(path.join(root,'docs')))fs.cpSync(path.join(root,'docs'),path.join(out,'docs'),{recursive:true});
 if(fs.existsSync(path.join(out,'data')))throw Error('A distributable must not contain user data.');
 console.log(out);
