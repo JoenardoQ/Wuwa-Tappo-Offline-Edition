@@ -18,9 +18,12 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+      - name: Package ZIP
+        shell: pwsh
+        run: Compress-Archive -Path dist/WuwaTappo-Offline-* -DestinationPath dist/WuwaTappo-Offline-Windows-x64.zip -CompressionLevel Optimal
       - uses: actions/upload-artifact@v4
         with:
           name: WuwaTappo-Offline-Windows-x64
-          path: dist/WuwaTappo-Offline-*
+          path: dist/*.zip
           retention-days: 7
           if-no-files-found: error
