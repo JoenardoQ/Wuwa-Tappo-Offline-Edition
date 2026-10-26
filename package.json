@@ -1,0 +1,19 @@
+{
+  "name": "wuwa-offline-companion",
+  "version": "1.0.2",
+  "private": true,
+  "description": "Personal offline desktop companion",
+  "main": "main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test.cjs",
+    "test:ui": "node scripts/test-ui.cjs",
+    "build": "node scripts/build.cjs"
+  },
+  "devDependencies": {
+    "electron": "45.0.0"
+  },
+  "dependencies": {
+    "uiohook-napi": "1.5.5"
+  }
+}

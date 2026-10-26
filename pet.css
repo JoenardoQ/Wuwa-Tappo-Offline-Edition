@@ -1,0 +1,27 @@
+*{box-sizing:border-box}
+html,body{padding:0;margin:0;width:100%;height:100%;overflow:hidden;background:transparent;font-family:var(--font-main),'Microsoft YaHei',sans-serif;user-select:none}
+[hidden]{display:none!important}button{cursor:pointer;font:inherit;border:0}
+#petRoot{width:320px;height:350px;position:relative;transform-origin:top left;color:#8e5e43}
+#petContent{position:absolute;left:0;top:100px;width:320px;height:250px;transition:opacity .3s}
+#petRoot.hover-fade #petContent:hover{opacity:.4}
+#stage{position:absolute;left:70px;top:0;width:200px;height:200px;cursor:grab}
+#stage:active{cursor:grabbing}#stage>img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none}
+#head{z-index:1}#body{z-index:2}#accessory{z-index:3}
+#emoteBar{left:70px;top:0;bottom:auto;width:200px;height:180px;z-index:8}
+.emotion-dot-slot{border:0;background:none;padding:0}.emotion-dot{position:relative}
+.desk{position:absolute;left:24px;top:181px;width:286px;height:40px;filter:drop-shadow(0 2px 2px #0002)}
+/* Use the original toolbar alpha cutout with no artificial oval underneath. */
+.desk:before{content:'';position:absolute;left:0;top:0;width:211.556px;height:40px;border-radius:32px 0 0 32px;background:#fdf9ed}
+.keyboard-plane{position:absolute;left:17px;top:5px;width:148px;height:30px;transform:skewX(-30deg);transform-origin:center;overflow:hidden;border:0;border-radius:3px;background:none;padding:0;margin:0;box-shadow:0 1.5px 0 #bf9b76,0 2.5px 1px #8e654622}
+.keyboard{display:flex;flex-direction:column;width:148px;height:30px;gap:0;padding:0;margin:0;border-radius:3px;overflow:hidden}
+.keyrow{display:flex;flex:1;gap:0;padding:0;margin:0;min-height:0}
+.key{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;border:0;border-right:.4px solid #cbb18d;border-bottom:.65px solid #c5a47b;border-radius:0;font-family:'Comic Sans MS',var(--font-bold),'Microsoft YaHei',sans-serif;font-size:5.4px;font-weight:700;line-height:1;background:linear-gradient(#fffdf5,#f5e7cf);box-shadow:inset 0 .65px 0 #ffffffdd;color:#936542;transition:background .04s}
+.key.wide{flex:1.4;font-size:4.7px}.key.space{flex:5.8}.keyrow:last-child .key:not(.space){font-size:4.7px}
+.key.active{background:linear-gradient(#ffe7ad,#f5c978);box-shadow:inset 0 1px 2px #af7c4870;border-bottom-color:#b98d59}
+.key>span{display:block;transform:skewX(30deg)}
+.pet-info{position:absolute;left:171px;top:4px;width:41px;height:32px;margin:0;cursor:pointer}
+.pet-info .text{background:transparent;border-radius:0;padding-left:2px;font-size:18px;line-height:32px;white-space:nowrap}
+.pet-toolbar{position:absolute;left:209.556px;top:0;width:76.444px;height:40px;background-image:url('original-ui/toolbar.png');background-size:100% 100%;background-repeat:no-repeat}
+.pet-toolbar #openChest{position:absolute;left:0;top:0;width:29px;height:40px;background:transparent;opacity:0}
+.pet-toolbar .settings-btn{width:47.5px;height:40px;background:transparent}
+.pet-toolbar #openChest:focus-visible,.pet-toolbar .settings-btn:focus-visible{opacity:.4;background:#fed291}
