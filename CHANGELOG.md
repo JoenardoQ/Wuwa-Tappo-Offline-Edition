@@ -1,3 +1,10 @@
+# 未发布
+
+- 新增 Linux x64 支持：`npm run build` 可在 Linux 上生成便携目录，附带自动处理 Chromium 沙箱与 Wayland 的启动器 `WuwaTappo-Offline.sh`。
+- `npm start`、`npm run test:ui` 在 Linux 上按需追加 `--no-sandbox` / `--ozone-platform=x11`。
+- Linux 开机启动改为写入 XDG autostart 桌面文件。
+- 新增 Linux GitHub Actions 工作流，产出 tar.gz。
+
 # 1.0.3
 
 - 修复图鉴全部分类无法滚动、角色下拉菜单裁切。
