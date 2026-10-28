@@ -1,0 +1,31 @@
+name: Linux portable
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - name: Package tar.gz
+        run: |
+          cd dist
+          dir=$(ls -d WuwaTappo-Offline-*/ | head -n1)
+          tar -czf WuwaTappo-Offline-Linux-x64.tar.gz "${dir%/}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WuwaTappo-Offline-Linux-x64
+          path: dist/*.tar.gz
+          retention-days: 7
+          if-no-files-found: error

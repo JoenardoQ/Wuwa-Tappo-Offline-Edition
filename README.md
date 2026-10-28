@@ -12,7 +12,23 @@
 
 下载上面的便携 ZIP，完整解压后运行文件夹内的 **WuwaTappo-Offline.exe**。无需安装 Node.js，也无需官方账号。请保留全部文件，不能只拷贝 exe。GitHub 自动生成的 Source code 压缩包是源码，不是可直接运行的程序。
 
-当前支持 Windows x64。运行期间不访问网络，收藏、搭配和设置只保存在本机。
+当前支持 Windows x64 与 Linux x64。运行期间不访问网络，收藏、搭配和设置只保存在本机。
+
+### Linux x64
+
+Linux 版为便携 tar.gz（由 `npm run build` 在 Linux 上生成，或从 GitHub Actions 的 Linux portable 产物下载）。解压后运行启动器：
+
+```bash
+tar -xzf WuwaTappo-Offline-Linux-x64.tar.gz
+cd WuwaTappo-Offline-1.0.3
+./WuwaTappo-Offline.sh
+```
+
+- 请通过 `WuwaTappo-Offline.sh` 启动，不要直接运行 `WuwaTappo-Offline`。启动器会检测 Chromium 沙箱：Ubuntu 23.10+ 等限制非特权用户命名空间的系统上，会改用 `--no-sandbox` 并在终端提示。想保留沙箱，可执行一次 `sudo chown root:root chrome-sandbox && sudo chmod 4755 chrome-sandbox`。
+- 桌宠依赖窗口置顶、定位和全局光标坐标，原生 Wayland 不提供这些能力，启动器在 Wayland 会话中会自动改走 XWayland（X11）。设置 `WUWA_NATIVE_WAYLAND=1` 可关闭这一行为。
+- 全局键鼠监听基于 X11（libXtst）。在 Wayland 会话中通常只能收到 XWayland 窗口的输入，收不到时会显示“全局输入暂不可用”，仍可点击桌宠互动。
+- 透明窗口需要桌面合成器（GNOME、KDE 等默认开启）。系统托盘依赖 AppIndicator / StatusNotifier，GNOME 需安装相应扩展；Linux 托盘不支持双击，请用托盘菜单的“收藏与搭配”。
+- 开机启动会写入 `~/.config/autostart/wuwa-tappo-offline.desktop`。
 
 ## 与官方版的差别
 
@@ -55,7 +71,7 @@
 
 ## 存档与升级
 
-从 v1.0.3 起，存档固定保存在 **%APPDATA%/WuwaTappoOffline/collection.json**，备份为 collection.json.bak。可以在设置里点击“查看存档”打开，不受 ZIP 版本号和解压目录变化影响。
+从 v1.0.3 起，存档固定保存在 **%APPDATA%/WuwaTappoOffline/collection.json**（Linux 为 **~/.config/WuwaTappoOffline/collection.json**），备份为 collection.json.bak。可以在设置里点击“查看存档”打开，不受 ZIP 版本号和解压目录变化影响。
 
 首次启动 v1.0.3 时，优先继承当前 exe 旁的旧 data/collection.json；若没有，会在解压目录附近以及 Downloads 下的 WuwaTappo-Offline 文件夹中寻找最近的有效旧存档。迁移前自动复制到固定存档目录的 migration-backups，旧文件保留不动。已有固定存档后，后续版本直接读取它，不会重复导入旧文件。
 
@@ -63,7 +79,7 @@
 
 ## 从源码运行与打包
 
-需要 Windows x64 和 Node.js 24；首次安装依赖及 Electron 运行程序需要联网。
+需要 Windows x64 或 Linux x64，以及 Node.js 24；首次安装依赖及 Electron 运行程序需要联网。
 
 ```powershell
 npm ci
@@ -71,16 +87,16 @@ npm test
 npm start
 ```
 
-`npm ci` 的安装步骤会自动下载并校验所需 Electron 运行程序。生成便携目录：
+`npm ci` 的安装步骤会自动下载并校验所需 Electron 运行程序。`npm start` 在 Linux 上会按需追加 `--no-sandbox` 与 `--ozone-platform=x11`。生成便携目录（在哪个平台执行就生成哪个平台的版本）：
 
 ```powershell
 npm run build
 ```
 
-输出位于 `dist/WuwaTappo-Offline-1.0.3/`。GitHub Actions 在 Windows 上自动安装依赖、运行测试、构建并压缩 ZIP。
+输出位于 `dist/WuwaTappo-Offline-1.0.3/`，Linux 版额外包含启动器 `WuwaTappo-Offline.sh`。GitHub Actions 分别在 Windows 和 Linux 上自动安装依赖、运行测试、构建并打包 ZIP / tar.gz。
 
 ## 验证与许可范围
 
-`npm test` 验证初始收藏、资源完整性、抽取、合成、存档迁移、计数归零和装备表情选择。`npm run test:ui` 在独立存档中检查换装、输入、表情、置顶恢复、连续加载、筛选及保存，结果写入 `qa-output/result.json`；需要 Windows 桌面会话。
+`npm test` 验证初始收藏、资源完整性、抽取、合成、存档迁移、计数归零和装备表情选择。`npm run test:ui` 在独立存档中检查换装、输入、表情、置顶恢复、连续加载、筛选及保存，结果写入 `qa-output/result.json`；需要桌面会话，Linux 无显示环境时可用 `xvfb-run -a npm run test:ui`。
 
 独立代码许可见 [LICENSE](LICENSE)，官方美术、字体、界面资源及依赖说明见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。

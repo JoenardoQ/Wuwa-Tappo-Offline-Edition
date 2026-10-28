@@ -29,6 +29,11 @@ function showStudio(){if(studio&&!studio.isDestroyed()){if(studio.isMinimized())
  studio.loadFile('studio.html');studio.webContents.once('did-finish-load',()=>setTimeout(()=>{studio.show();studio.focus();},200));studio.on('focus',()=>setTimeout(keepPetOnTop,0));studio.on('close',e=>{if(!quitting){e.preventDefault();studio.hide();}});secure(studio);
 }
 function secure(w){w.webContents.setWindowOpenHandler(()=>({action:'deny'}));w.webContents.on('will-navigate',e=>e.preventDefault());}
+// Linux 下 setLoginItemSettings 无效，按 XDG 规范写入 ~/.config/autostart；优先使用便携包内的启动器以处理沙箱参数。
+function setAutoStart(on){if(process.platform!=='linux'){app.setLoginItemSettings({openAtLogin:on,path:process.execPath,args:[]});return;}
+ const file=path.join(app.getPath('appData'),'autostart','wuwa-tappo-offline.desktop');if(!on){fs.rmSync(file,{force:true});return;}
+ const launcher=path.join(PORTABLE,'WuwaTappo-Offline.sh'),exec=fs.existsSync(launcher)?launcher:process.execPath,quoted='"'+exec.replace(/[\\"`$]/g,c=>'\\'+c)+'"';
+ fs.mkdirSync(path.dirname(file),{recursive:true});fs.writeFileSync(file,['[Desktop Entry]','Type=Application','Name=Wuwa Tappo 离线版','Exec='+quoted.replace(/\\/g,'\\\\'),'Terminal=false','X-GNOME-Autostart-enabled=true',''].join('\n'));}
 function menu(){return Menu.buildFromTemplate([{label:'收藏与搭配',click:showStudio},{label:'显示桌宠 / 回到屏幕角落',click:()=>{pet.show();place();}},{label:'鼠标穿透（Ctrl+Alt+P 可恢复）',type:'checkbox',checked:state.settings.passthrough,click:()=>{state.settings.passthrough=!state.settings.passthrough;applySettings();save();broadcast();}},{label:'响应键盘和鼠标',type:'checkbox',checked:state.settings.inputEnabled,click:()=>{state.settings.inputEnabled=!state.settings.inputEnabled;applySettings();save();broadcast();}},{type:'separator'},{label:'退出Wuwa Tappo 离线版',click:()=>app.quit()}]);}
 function input(key,down,side){if(!state.settings.inputEnabled)return;if(down&&pressed.has(key))return;if(down){pressed.add(key);const emote=core.registerTap(state,items);if(state.count===0){save();if(emote)pet?.webContents.send('emote',emote);}else laterSave();}else pressed.delete(key);const event={key,down,side,count:state.count,serial:++inputSerial};if(pet&&!pet.isDestroyed())pet.webContents.send('input',event);}
 function startHook(){try{const {uIOhook,UiohookKey}=require('uiohook-napi');hook=uIOhook;const names=new Map();for(const [k,v]of Object.entries(UiohookKey))if(!names.has(v))names.set(v,k);
@@ -49,7 +54,7 @@ ipcMain.handle('command',async(_,name,arg)=>{try{let result=null;switch(name){
  case 'preset-load':{const p=state.presets.find(x=>x.id===arg);if(!p)throw Error('搭配不存在');state.character=p.character;state.accessory=p.accessory;state.emotes=[...p.emotes];break;}
  case 'preset-delete':state.presets=state.presets.filter(x=>x.id!==arg);break;
  case 'emote':if(!state.owned[arg]||!items.some(x=>x.id===arg&&x.type==='emote'))throw Error('表情未获得');pet.webContents.send('emote',arg);return{ok:true};
- case 'settings':{pressed.clear();const old=state.settings;const next=core.settings({...old,...arg});if(next.autoStart!==old.autoStart){if(!app.isPackaged&&next.autoStart)throw Error('请从便携版开启开机启动');app.setLoginItemSettings({openAtLogin:next.autoStart,path:process.execPath,args:[]});}state.settings=next;applySettings();if(next.scale!==old.scale||next.monitor!==old.monitor)place();break;}
+ case 'settings':{pressed.clear();const old=state.settings;const next=core.settings({...old,...arg});if(next.autoStart!==old.autoStart){if(!app.isPackaged&&next.autoStart)throw Error('请从便携版开启开机启动');setAutoStart(next.autoStart);}state.settings=next;applySettings();if(next.scale!==old.scale||next.monitor!==old.monitor)place();break;}
  case 'recenter':place();pet.show();return{ok:true};
  case 'tap':if(hookStatus!=='全局键盘与鼠标已连接'){input('MouseLeft',true,'left');input('MouseLeft',false);}return{ok:true};
  case 'folder':await shell.openPath(dataDir);return{ok:true};

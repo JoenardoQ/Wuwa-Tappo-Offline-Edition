@@ -1,12 +1,15 @@
 const fs=require('fs'),path=require('path');
 const root=path.resolve(__dirname,'..'),pkg=require('../package.json');
-if(process.platform!=='win32'||process.arch!=='x64')throw Error('Build on Windows x64.');
+const target=process.platform+'-'+process.arch;
+const platforms={'win32-x64':{binary:'electron.exe',name:'WuwaTappo-Offline.exe'},'linux-x64':{binary:'electron',name:'WuwaTappo-Offline'}};
+const platform=platforms[target];if(!platform)throw Error('Build on Windows x64 or Linux x64.');
 const runtime=path.join(root,'node_modules/electron/dist');
-if(!fs.existsSync(path.join(runtime,'electron.exe')))throw Error('Run npm ci first.');
+if(!fs.existsSync(path.join(runtime,platform.binary)))throw Error('Run npm ci first.');
 const out=path.join(root,'dist','WuwaTappo-Offline-'+pkg.version);
 if(fs.existsSync(out))throw Error('Output already exists; move it before rebuilding: '+out);
 fs.mkdirSync(path.dirname(out),{recursive:true});fs.cpSync(runtime,out,{recursive:true});
-fs.renameSync(path.join(out,'electron.exe'),path.join(out,'WuwaTappo-Offline.exe'));
+fs.renameSync(path.join(out,platform.binary),path.join(out,platform.name));
+if(target==='linux-x64'){const launcher=path.join(out,'WuwaTappo-Offline.sh');fs.copyFileSync(path.join(root,'scripts/linux/WuwaTappo-Offline.sh'),launcher);for(const file of [launcher,path.join(out,platform.name),path.join(out,'chrome_crashpad_handler')])if(fs.existsSync(file))fs.chmodSync(file,0o755);}
 const defaultApp=path.join(out,'resources/default_app.asar');if(fs.existsSync(defaultApp))fs.unlinkSync(defaultApp);
 const appDir=path.join(out,'resources/app');fs.mkdirSync(appDir,{recursive:true});
 const files=['main.cjs','preload.cjs','core.cjs','storage.cjs','pet.html','pet.css','pet.js','emotions.js','studio.html','studio.css','studio.js','catalog.json','asset-manifest.json','package.json','qa.cjs'];

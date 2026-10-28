@@ -5,7 +5,7 @@
   "description": "Personal offline desktop companion",
   "main": "main.cjs",
   "scripts": {
-    "start": "electron .",
+    "start": "node scripts/start.cjs",
     "test": "node --test test.cjs",
     "test:ui": "node scripts/test-ui.cjs",
     "build": "node scripts/build.cjs",
