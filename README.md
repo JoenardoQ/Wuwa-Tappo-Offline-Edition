@@ -7,10 +7,12 @@
 
 **[前往最新 Release](https://github.com/JoenardoQ/Wuwa-Tappo-Offline-Edition/releases/latest)**
 
-**[直接下载 Windows x64 便携 ZIP · v1.0.3](https://github.com/JoenardoQ/Wuwa-Tappo-Offline-Edition/releases/download/v1.0.3/WuwaTappo-Offline-42keys-v1.0.3.zip)**
-[下载 SHA-256 校验文件](https://github.com/JoenardoQ/Wuwa-Tappo-Offline-Edition/releases/download/v1.0.3/WuwaTappo-Offline-42keys-v1.0.3.sha256.txt)
+**[直接下载 Windows x64 便携 ZIP · v1.0.4](https://github.com/JoenardoQ/Wuwa-Tappo-Offline-Edition/releases/download/v1.0.4/WuwaTappo-Offline-42keys-v1.0.4.zip)**
+[下载 SHA-256 校验文件](https://github.com/JoenardoQ/Wuwa-Tappo-Offline-Edition/releases/download/v1.0.4/WuwaTappo-Offline-42keys-v1.0.4.sha256.txt)
 
 下载上面的便携 ZIP，完整解压后运行文件夹内的 **WuwaTappo-Offline.exe**。无需安装 Node.js，也无需官方账号。请保留全部文件，不能只拷贝 exe。GitHub 自动生成的 Source code 压缩包是源码，不是可直接运行的程序。
+
+本次 v1.0.4 修复鼠标拖动时桌宠持续变大，尤其是 Windows 125%、150%、175% 屏幕缩放下的尺寸累积误差。完整更新说明见 [CHANGELOG.md](CHANGELOG.md)，便携 ZIP 内也附有此文件。
 
 当前支持 Windows x64。运行期间不访问网络，收藏、搭配和设置只保存在本机。
 
@@ -57,7 +59,7 @@
 
 从 v1.0.3 起，存档固定保存在 **%APPDATA%/WuwaTappoOffline/collection.json**，备份为 collection.json.bak。可以在设置里点击“查看存档”打开，不受 ZIP 版本号和解压目录变化影响。
 
-首次启动 v1.0.3 时，优先继承当前 exe 旁的旧 data/collection.json；若没有，会在解压目录附近以及 Downloads 下的 WuwaTappo-Offline 文件夹中寻找最近的有效旧存档。迁移前自动复制到固定存档目录的 migration-backups，旧文件保留不动。已有固定存档后，后续版本直接读取它，不会重复导入旧文件。
+首次启动 v1.0.3 或更新版本时，优先继承当前 exe 旁的旧 data/collection.json；若没有，会在解压目录附近以及 Downloads 下的 WuwaTappo-Offline 文件夹中寻找最近的有效旧存档。迁移前自动复制到固定存档目录的 migration-backups，旧文件保留不动。已有固定存档后，后续版本直接读取它，不会重复导入旧文件。
 
 升级时退出旧版，下载并完整解压新版 ZIP，然后运行新 exe；通常无需手动复制 data。请在首次迁移成功前保留旧目录。如果旧版放在其他任意位置，可先把它的 data 文件夹放到新版 exe 旁再首次启动。发行包不包含任何用户存档、账号或日志。
 
@@ -77,10 +79,10 @@ npm start
 npm run build
 ```
 
-输出位于 `dist/WuwaTappo-Offline-1.0.3/`。GitHub Actions 在 Windows 上自动安装依赖、运行测试、构建并压缩 ZIP。
+输出位于 `dist/WuwaTappo-Offline-1.0.4/`。GitHub Actions 在 Windows 上自动安装依赖、运行测试、构建并压缩 ZIP。
 
 ## 验证与许可范围
 
-`npm test` 验证初始收藏、资源完整性、抽取、合成、存档迁移、计数归零和装备表情选择。`npm run test:ui` 在独立存档中检查换装、输入、表情、置顶恢复、连续加载、筛选及保存，结果写入 `qa-output/result.json`；需要 Windows 桌面会话。
+`npm test` 验证初始收藏、资源完整性、抽取、合成、存档迁移、计数归零和装备表情选择。`npm run test:ui` 在独立存档中检查换装、输入、表情、置顶恢复、连续加载、筛选及保存，结果写入 `qa-output/result.json`；需要 Windows 桌面会话。`npm run test:drag` 在独立存档和原生窗口中通过实际拖动入口测试 5 种屏幕缩放 × 3 种桌宠大小，每个组合连续移动 120 次，并检查异常尺寸恢复与拖动禁用规则；不会改动系统显示设置，结果写入 `qa-output/drag/result.json`。
 
 独立代码许可见 [LICENSE](LICENSE)，官方美术、字体、界面资源及依赖说明见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。

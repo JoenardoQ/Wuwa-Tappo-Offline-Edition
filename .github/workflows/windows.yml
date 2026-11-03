@@ -17,6 +17,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+      - run: npm run test:drag
       - run: npm run build
       - name: Package ZIP
         shell: pwsh

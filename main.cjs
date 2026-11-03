@@ -2,7 +2,8 @@ const {app,BrowserWindow,ipcMain,screen,Tray,Menu,nativeImage,globalShortcut,ses
 const fs=require('fs'),path=require('path');
 const core=require('./core.cjs'),storage=require('./storage.cjs'),{items}=require('./catalog.json');
 const QA=process.argv.includes('--qa'),PORTABLE=app.isPackaged?path.dirname(process.execPath):__dirname;
-const SELFTEST=QA&&process.argv.includes('--selftest')&&!process.argv.includes('--snapshot')&&!process.argv.includes('--interactive-test');
+const DRAGTEST=QA&&process.argv.includes('--test-drag');
+const SELFTEST=QA&&process.argv.includes('--selftest')&&!DRAGTEST&&!process.argv.includes('--snapshot')&&!process.argv.includes('--interactive-test');
 const dataDir=QA?path.join(process.env.WUWA_QA_OUTPUT||path.join(__dirname,'..'),'qa-data-'+process.pid):path.join(app.getPath('appData'),'WuwaTappoOffline');
 fs.mkdirSync(dataDir,{recursive:true});app.setName('Wuwa Tappo 离线版');app.setPath('userData',path.join(dataDir,'runtime'));
 const primaryInstance=app.requestSingleInstanceLock();
@@ -15,7 +16,8 @@ function windows(){return[pet,studio].filter(w=>w&&!w.isDestroyed());}
 function broadcast(){for(const w of windows())w.webContents.send('state',state);}
 function status(){for(const w of windows())w.webContents.send('status',{hook:hookStatus,warning:saveWarning});}
 function display(){const ds=screen.getAllDisplays();return ds[state.settings.monitor]||screen.getPrimaryDisplay();}
-function place(){if(!pet)return;const a=display().workArea;const w=Math.round(320*state.settings.scale),h=Math.round(350*state.settings.scale);pet.setBounds({x:a.x+a.width-w-24,y:a.y+a.height-h-12,width:w,height:h});}
+function petSize(){return{width:Math.round(320*state.settings.scale),height:Math.round(350*state.settings.scale)};}
+function place(){if(!pet||pet.isDestroyed())return;const a=display().workArea,{width,height}=petSize();pet.setBounds({x:a.x+a.width-width-24,y:a.y+a.height-height-12,width,height});}
 function keepPetOnTop(){if(!pet||pet.isDestroyed()||!pet.isVisible())return;if(!pet.isAlwaysOnTop())pet.setAlwaysOnTop(true,'screen-saver');pet.moveTop();}
 function pointerMode(){if(!pet||pet.isDestroyed())return;const b=pet.getBounds(),cursor=screen.getCursorScreenPoint();const ignore=state.settings.passthrough||state.settings.gameMode||cursor.y<b.y+100*state.settings.scale;if(ignore!==lastIgnore){pet.setIgnoreMouseEvents(ignore,{forward:true});lastIgnore=ignore;}}
 function applySettings(){if(!pet)return;pet.setAlwaysOnTop(true,'screen-saver');keepPetOnTop();pet.setOpacity(state.settings.opacity);pointerMode();if(tray)tray.setContextMenu(menu());}
@@ -56,7 +58,14 @@ ipcMain.handle('command',async(_,name,arg)=>{try{let result=null;switch(name){
  case 'quit':app.quit();return{ok:true};
  default:throw Error('未知操作');}
  const saved=await save();broadcast();return{ok:true,result,warning:saved?'':saveWarning};}catch(e){return{ok:false,error:e.message};}});
-ipcMain.on('move',(_,dx,dy)=>{if(state.settings.passthrough||state.settings.lockDrag||state.settings.gameMode||!Number.isFinite(dx)||!Number.isFinite(dy))return;const [x,y]=pet.getPosition();const a=screen.getDisplayMatching(pet.getBounds()).workArea;const b=pet.getBounds();pet.setPosition(Math.round(Math.max(a.x-b.width+100,Math.min(a.x+a.width-100,x+dx))),Math.round(Math.max(a.y-250,Math.min(a.y+a.height-b.height+20,y+dy))));});
+ipcMain.on('move',(event,dx,dy)=>{
+ if(!pet||pet.isDestroyed()||event.sender!==pet.webContents||state.settings.passthrough||state.settings.lockDrag||state.settings.gameMode||!Number.isFinite(dx)||!Number.isFinite(dy))return;
+ const b=pet.getBounds(),a=screen.getDisplayMatching(b).workArea,{width,height}=petSize();
+ // setPosition round-trips the native size through DIP conversion on Windows.
+ // At fractional DPI that can add pixels on every move. Always use the saved scale,
+ // never the measured window size, so rounding cannot accumulate while dragging.
+ pet.setBounds({x:Math.round(Math.max(a.x-width+100,Math.min(a.x+a.width-100,b.x+dx))),y:Math.round(Math.max(a.y-250,Math.min(a.y+a.height-height+20,b.y+dy))),width,height});
+});
 ipcMain.on('resize-studio',(event,edge,dx,dy)=>{if(!studio||event.sender!==studio.webContents||!['n','s','e','w','ne','nw','se','sw'].includes(edge)||!Number.isFinite(dx)||!Number.isFinite(dy))return;studioRestoreBounds=null;const b=studio.getBounds();if(edge.includes('e'))b.width+=dx;if(edge.includes('s'))b.height+=dy;if(edge.includes('w')){b.x+=dx;b.width-=dx;}if(edge.includes('n')){b.y+=dy;b.height-=dy;}studio.setBounds(fitStudio(b));});
 if(!primaryInstance){app.quit();}else{
 app.on('second-instance',()=>{pet?.show();showStudio();});
@@ -69,8 +78,8 @@ app.whenReady().then(async()=>{
  globalShortcut.register('CommandOrControl+Alt+P',()=>{state.settings.passthrough=!state.settings.passthrough;applySettings();save();broadcast();});
  globalShortcut.register('F7',()=>{state.settings.gameMode=false;applySettings();save();broadcast();});globalShortcut.register('F8',()=>{state.settings.monitor=(state.settings.monitor+1)%screen.getAllDisplays().length;place();save();broadcast();});
  screen.on('display-removed',()=>place());screen.on('display-metrics-changed',()=>place());startHook();save();if(QA||process.argv.includes('--studio')||state.draws===0&&state.presets.length===0)showStudio();
- if(SELFTEST){for(const w of [pet,studio]){w.hide();w.show=()=>{};w.showInactive=()=>{};w.focus=()=>{};}}
- if(QA){global.__QA={state:()=>state,pet:()=>pet,studio:()=>studio,hook:()=>hookStatus,input};if(process.argv.includes('--selftest'))require('./qa.cjs')({app,pet,studio,items,getState:()=>state,save,dataDir,input});}
+ if(SELFTEST||DRAGTEST){for(const w of [pet,studio]){w.hide();w.show=()=>{};w.showInactive=()=>{};w.focus=()=>{};}}
+ if(QA){global.__QA={state:()=>state,pet:()=>pet,studio:()=>studio,hook:()=>hookStatus,input};if(process.argv.includes('--selftest'))require(DRAGTEST?'./qa-drag.cjs':'./qa.cjs')({app,pet,studio,items,getState:()=>state,save,dataDir,input});}
 });
 app.on('before-quit',e=>{if(quitting)return;e.preventDefault();quitting=true;clearTimeout(saveTimer);clearInterval(topTimer);clearInterval(pointerTimer);try{hook?.stop();}catch{}globalShortcut.unregisterAll();save().finally(()=>app.quit());});
 app.on('window-all-closed',()=>app.quit());}
