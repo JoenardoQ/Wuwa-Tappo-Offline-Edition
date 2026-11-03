@@ -7,28 +7,33 @@
 
 **[前往最新 Release](https://github.com/JoenardoQ/Wuwa-Tappo-Offline-Edition/releases/latest)**
 
-**[直接下载 Windows x64 便携 ZIP · v1.0.3](https://github.com/JoenardoQ/Wuwa-Tappo-Offline-Edition/releases/download/v1.0.3/WuwaTappo-Offline-42keys-v1.0.3.zip)**
-[下载 SHA-256 校验文件](https://github.com/JoenardoQ/Wuwa-Tappo-Offline-Edition/releases/download/v1.0.3/WuwaTappo-Offline-42keys-v1.0.3.sha256.txt)
+**[直接下载 Windows x64 便携 ZIP · v1.0.5](https://github.com/JoenardoQ/Wuwa-Tappo-Offline-Edition/releases/download/v1.0.5/WuwaTappo-Offline-42keys-v1.0.5.zip)**
+[下载 SHA-256 校验文件](https://github.com/JoenardoQ/Wuwa-Tappo-Offline-Edition/releases/download/v1.0.5/WuwaTappo-Offline-42keys-v1.0.5.sha256.txt)
 
 下载上面的便携 ZIP，完整解压后运行文件夹内的 **WuwaTappo-Offline.exe**。无需安装 Node.js，也无需官方账号。请保留全部文件，不能只拷贝 exe。GitHub 自动生成的 Source code 压缩包是源码，不是可直接运行的程序。
+
+本次 v1.0.5 修复左右手交替动作，新增 Linux x64 便携版，并保留 v1.0.4 的拖动尺寸修复。完整更新说明见 [CHANGELOG.md](CHANGELOG.md)，便携包内也附有此文件。
 
 当前支持 Windows x64 与 Linux x64。运行期间不访问网络，收藏、搭配和设置只保存在本机。
 
 ### Linux x64
 
-Linux 版为便携 tar.gz（由 `npm run build` 在 Linux 上生成，或从 GitHub Actions 的 Linux portable 产物下载）。解压后运行启动器：
+**[下载 Linux x64 便携 tar.gz · v1.0.5](https://github.com/JoenardoQ/Wuwa-Tappo-Offline-Edition/releases/download/v1.0.5/WuwaTappo-Offline-Linux-x64-v1.0.5.tar.gz)**
+
+完整解压后通过启动器运行：
 
 ```bash
-tar -xzf WuwaTappo-Offline-Linux-x64.tar.gz
-cd WuwaTappo-Offline-1.0.3
+tar -xzf WuwaTappo-Offline-Linux-x64-v1.0.5.tar.gz
+cd WuwaTappo-Offline-1.0.5
 ./WuwaTappo-Offline.sh
 ```
 
-- 请通过 `WuwaTappo-Offline.sh` 启动，不要直接运行 `WuwaTappo-Offline`。启动器会检测 Chromium 沙箱：Ubuntu 23.10+ 等限制非特权用户命名空间的系统上，会改用 `--no-sandbox` 并在终端提示。想保留沙箱，可执行一次 `sudo chown root:root chrome-sandbox && sudo chmod 4755 chrome-sandbox`。
-- 桌宠依赖窗口置顶、定位和全局光标坐标，原生 Wayland 不提供这些能力，启动器在 Wayland 会话中会自动改走 XWayland（X11）。设置 `WUWA_NATIVE_WAYLAND=1` 可关闭这一行为。
-- 全局键鼠监听基于 X11（libXtst）。在 Wayland 会话中通常只能收到 XWayland 窗口的输入，收不到时会显示“全局输入暂不可用”，仍可点击桌宠互动。
-- 透明窗口需要桌面合成器（GNOME、KDE 等默认开启）。系统托盘依赖 AppIndicator / StatusNotifier，GNOME 需安装相应扩展；Linux 托盘不支持双击，请用托盘菜单的“收藏与搭配”。
-- 开机启动会写入 `~/.config/autostart/wuwa-tappo-offline.desktop`。
+- 启动器完整保留传入参数。在存在 XWayland 的 Wayland 会话中自动使用 X11；设置 `WUWA_NATIVE_WAYLAND=1` 可主动使用原生 Wayland，但窗口定位、置顶、全局输入等能力受桌面环境限制。
+- 默认保留 Chromium 进程隔离。Ubuntu 等系统若限制沙箱而无法启动，可由管理员正确配置沙箱支持；仅在主动接受关闭进程隔离的风险时，使用 `WUWA_ALLOW_NO_SANDBOX=1 ./WuwaTappo-Offline.sh`。`npm start` 和界面测试采用相同策略，不会自动关闭隔离。
+- 全局键鼠监听基于 X11/libXtst，Wayland 下通常只能收到 XWayland 窗口的输入。钩子能启动不代表能监听所有原生 Wayland 应用。
+- 透明窗口需要桌面合成器；托盘需要 AppIndicator/StatusNotifier 支持，GNOME 可能需要相应扩展。Linux 托盘请用菜单打开“收藏与搭配”。
+- 开机启动写入 XDG 配置目录下的 `autostart/wuwa-tappo-offline.desktop`；保留空格、百分号等路径字符。开启时会保存本次主动选择的兼容模式。更换便携目录后，请关闭再开启一次开机启动以更新路径。
+- Linux 存档位于 `$XDG_CONFIG_HOME/WuwaTappoOffline/collection.json`，未设置 XDG_CONFIG_HOME 时为 `~/.config/WuwaTappoOffline/collection.json`。
 
 ## 与官方版的差别
 
@@ -38,7 +43,7 @@ cd WuwaTappo-Offline-1.0.3
 | 初始收藏 | 仅开放男女漂泊者经典形象、阿布配件和八个阿布基础表情，共 11 件；其余通过本地开箱或合成获得。 |
 | 开箱 | 单抽、十连均无限免费。采用本地规则：普通 65%、珍稀 25%、稀有 9%、史诗 1%；十连至少珍稀，最多 50 抽获得史诗。这些是离线版规则，不承诺与官方概率相同。 |
 | 合成 | 升阶消耗 10 份、平阶消耗 5 份同品类同稀有度多余副本；支持单次或十连，保留每件物品最后一份。 |
-| 键盘与拍桌 | 在原有底部胶囊内增加 42 键实时映射键盘，向右倾斜 30°，使用圆润字体与轻微立体效果。键鼠输入触发拍桌及计数。 |
+| 键盘与拍桌 | 在原有底部胶囊内增加 42 键实时映射键盘，向右倾斜 30°，使用圆润字体与轻微立体效果。每次有效键鼠输入交替触发左右手拍桌及计数；同一按键长按产生的重复事件不重复计数或换手。 |
 | 计数 | 计数从 999 再增加一次归零，并从当前装备的表情中随机浮现一个。未装备表情时只归零；按住同一个键不会重复计数。 |
 | 表情 | 使用原始互动图像，保留原版气泡边框、32/30 像素按钮布局、80 像素浮现图像、1 秒上浮轨迹及按压弹性。侧边气泡不再使用图鉴缩略图；点击背包上方任意表情槽的“更换”，可沿用主页面角色、稀有度下拉筛选已拥有表情并立即替换。 |
 | 窗口 | 强制始终置顶，失焦或层级变化后自动恢复，不主动抢输入焦点。Windows 安全桌面和独占全屏不受普通应用置顶控制。 |
@@ -71,9 +76,9 @@ cd WuwaTappo-Offline-1.0.3
 
 ## 存档与升级
 
-从 v1.0.3 起，存档固定保存在 **%APPDATA%/WuwaTappoOffline/collection.json**（Linux 为 **~/.config/WuwaTappoOffline/collection.json**），备份为 collection.json.bak。可以在设置里点击“查看存档”打开，不受 ZIP 版本号和解压目录变化影响。
+从 v1.0.3 起，存档固定保存在 **%APPDATA%/WuwaTappoOffline/collection.json**，备份为 collection.json.bak。可以在设置里点击“查看存档”打开，不受 ZIP 版本号和解压目录变化影响。
 
-首次启动 v1.0.3 时，优先继承当前 exe 旁的旧 data/collection.json；若没有，会在解压目录附近以及 Downloads 下的 WuwaTappo-Offline 文件夹中寻找最近的有效旧存档。迁移前自动复制到固定存档目录的 migration-backups，旧文件保留不动。已有固定存档后，后续版本直接读取它，不会重复导入旧文件。
+首次启动 v1.0.3 或更新版本时，优先继承当前 exe 旁的旧 data/collection.json；若没有，会在解压目录附近以及 Downloads 下的 WuwaTappo-Offline 文件夹中寻找最近的有效旧存档。迁移前自动复制到固定存档目录的 migration-backups，旧文件保留不动。已有固定存档后，后续版本直接读取它，不会重复导入旧文件。
 
 升级时退出旧版，下载并完整解压新版 ZIP，然后运行新 exe；通常无需手动复制 data。请在首次迁移成功前保留旧目录。如果旧版放在其他任意位置，可先把它的 data 文件夹放到新版 exe 旁再首次启动。发行包不包含任何用户存档、账号或日志。
 
@@ -87,16 +92,16 @@ npm test
 npm start
 ```
 
-`npm ci` 的安装步骤会自动下载并校验所需 Electron 运行程序。`npm start` 在 Linux 上会按需追加 `--no-sandbox` 与 `--ozone-platform=x11`。生成便携目录（在哪个平台执行就生成哪个平台的版本）：
+`npm ci` 的安装步骤会自动下载并校验所需 Electron 运行程序。生成便携目录：
 
 ```powershell
 npm run build
 ```
 
-输出位于 `dist/WuwaTappo-Offline-1.0.3/`，Linux 版额外包含启动器 `WuwaTappo-Offline.sh`。GitHub Actions 分别在 Windows 和 Linux 上自动安装依赖、运行测试、构建并打包 ZIP / tar.gz。
+输出位于 `dist/WuwaTappo-Offline-1.0.5/`。GitHub Actions 分别在 Windows 和 Linux 上安装依赖、运行测试、构建 ZIP / tar.gz。Linux 工作流还在 X11 虚拟桌面中运行界面测试及便携启动器测试；其中关闭隔离仅用于 CI 的显式兼容模式。
 
 ## 验证与许可范围
 
-`npm test` 验证初始收藏、资源完整性、抽取、合成、存档迁移、计数归零和装备表情选择。`npm run test:ui` 在独立存档中检查换装、输入、表情、置顶恢复、连续加载、筛选及保存，结果写入 `qa-output/result.json`；需要桌面会话，Linux 无显示环境时可用 `xvfb-run -a npm run test:ui`。
+`npm test` 验证初始收藏、资源完整性、抽取、合成、存档迁移、计数归零和装备表情选择。`npm run test:ui` 在独立存档中检查换装、输入、表情、置顶恢复、连续加载、筛选及保存，结果写入 `qa-output/result.json`；需要桌面会话。Linux 可在带窗口管理器的 Xvfb 环境中测试；原生 GNOME/KDE/Wayland 的桌面行为仍需实机验证。`npm run test:drag` 在独立存档和原生窗口中通过实际拖动入口测试 5 种屏幕缩放 × 3 种桌宠大小，每个组合连续移动 120 次，并检查异常尺寸恢复与拖动禁用规则；不会改动系统显示设置，结果写入 `qa-output/drag/result.json`。
 
 独立代码许可见 [LICENSE](LICENSE)，官方美术、字体、界面资源及依赖说明见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。

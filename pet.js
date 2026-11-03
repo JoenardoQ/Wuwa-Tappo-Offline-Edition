@@ -26,7 +26,7 @@ petAPI.onStatus(s=>{$('inputStatus').title=s.hook+(s.warning?' · '+s.warning:''
 $('openStudio').onclick=()=>petAPI.command('open');$('openChest').onclick=()=>petAPI.command('open','draw');
 let drag=null;$('stage').addEventListener('pointerdown',e=>{if(e.button!==0||state.settings.lockDrag||state.settings.gameMode)return;drag={x:e.screenX,y:e.screenY,total:0};$('stage').setPointerCapture(e.pointerId);});
 $('stage').addEventListener('pointermove',e=>{if(!drag)return;const dx=e.screenX-drag.x,dy=e.screenY-drag.y;drag.x=e.screenX;drag.y=e.screenY;drag.total+=Math.abs(dx)+Math.abs(dy);if(dx||dy)petAPI.move(dx,dy);});
-$('stage').addEventListener('pointerup',()=>{if(drag&&drag.total<4){pat('left');petAPI.command('tap');}drag=null;});
+$('stage').addEventListener('pointerup',()=>{if(drag&&drag.total<4)petAPI.command('tap');drag=null;});
 function resize(){$('petRoot').style.transform=`scale(${innerWidth/320})`;}addEventListener('resize',resize);
 petAPI.init().then(d=>{state=d.state;items=d.items;map=new Map(items.map(x=>[x.id,x]));render();resize();setInterval(()=>{face=2;layers();setTimeout(()=>{face=1;layers();},180);},4200);});
 window.__petTest=()=>({character:state?.character,count:$('counter').textContent,serial,action,face,loaded:[$('head'),$('body')].every(x=>x.complete&&x.naturalWidth>0),bubble:!!document.querySelector('#bubble img'),keys:document.querySelectorAll('.key').length,tilt:getComputedStyle(document.querySelector('.keyboard-plane')).transform});

@@ -2,12 +2,13 @@ const {app,BrowserWindow,ipcMain,screen,Tray,Menu,nativeImage,globalShortcut,ses
 const fs=require('fs'),path=require('path');
 const core=require('./core.cjs'),storage=require('./storage.cjs'),{items}=require('./catalog.json');
 const QA=process.argv.includes('--qa'),PORTABLE=app.isPackaged?path.dirname(process.execPath):__dirname;
-const SELFTEST=QA&&process.argv.includes('--selftest')&&!process.argv.includes('--snapshot')&&!process.argv.includes('--interactive-test');
+const DRAGTEST=QA&&process.argv.includes('--test-drag');
+const SELFTEST=QA&&process.argv.includes('--selftest')&&!DRAGTEST&&!process.argv.includes('--snapshot')&&!process.argv.includes('--interactive-test');
 const dataDir=QA?path.join(process.env.WUWA_QA_OUTPUT||path.join(__dirname,'..'),'qa-data-'+process.pid):path.join(app.getPath('appData'),'WuwaTappoOffline');
 fs.mkdirSync(dataDir,{recursive:true});app.setName('Wuwa Tappo 离线版');app.setPath('userData',path.join(dataDir,'runtime'));
 const primaryInstance=app.requestSingleInstanceLock();
 const savePath=path.join(dataDir,'collection.json'),profile=primaryInstance&&!QA?storage.initProfile({dataDir,portableDir:PORTABLE,searchRoots:[app.getPath('downloads')],items}):{state:core.initial(items),warning:''};let state=profile.state,saveWarning=profile.warning;
-let pet,studio,tray,hook,hookStatus='正在连接键盘',saveTimer,quitting=false,pressed=new Set(),inputSerial=0,topTimer,pointerTimer,lastIgnore;
+let pet,studio,tray,hook,hookStatus='正在连接键盘',saveTimer,quitting=false,pressed=new Set(),inputSerial=0,nextHand='left',topTimer,pointerTimer,lastIgnore;
 const writeState=storage.createWriter(savePath);
 async function save(){try{await writeState(state);return true;}catch(e){saveWarning='收藏保存失败，请检查文件夹写入权限';status();return false;}}
 function laterSave(){if(!saveTimer)saveTimer=setTimeout(()=>{saveTimer=null;save();},3000);}
@@ -15,7 +16,8 @@ function windows(){return[pet,studio].filter(w=>w&&!w.isDestroyed());}
 function broadcast(){for(const w of windows())w.webContents.send('state',state);}
 function status(){for(const w of windows())w.webContents.send('status',{hook:hookStatus,warning:saveWarning});}
 function display(){const ds=screen.getAllDisplays();return ds[state.settings.monitor]||screen.getPrimaryDisplay();}
-function place(){if(!pet)return;const a=display().workArea;const w=Math.round(320*state.settings.scale),h=Math.round(350*state.settings.scale);pet.setBounds({x:a.x+a.width-w-24,y:a.y+a.height-h-12,width:w,height:h});}
+function petSize(){return{width:Math.round(320*state.settings.scale),height:Math.round(350*state.settings.scale)};}
+function place(){if(!pet||pet.isDestroyed())return;const a=display().workArea,{width,height}=petSize();pet.setBounds({x:a.x+a.width-width-24,y:a.y+a.height-height-12,width,height});}
 function keepPetOnTop(){if(!pet||pet.isDestroyed()||!pet.isVisible())return;if(!pet.isAlwaysOnTop())pet.setAlwaysOnTop(true,'screen-saver');pet.moveTop();}
 function pointerMode(){if(!pet||pet.isDestroyed())return;const b=pet.getBounds(),cursor=screen.getCursorScreenPoint();const ignore=state.settings.passthrough||state.settings.gameMode||cursor.y<b.y+100*state.settings.scale;if(ignore!==lastIgnore){pet.setIgnoreMouseEvents(ignore,{forward:true});lastIgnore=ignore;}}
 function applySettings(){if(!pet)return;pet.setAlwaysOnTop(true,'screen-saver');keepPetOnTop();pet.setOpacity(state.settings.opacity);pointerMode();if(tray)tray.setContextMenu(menu());}
@@ -32,13 +34,14 @@ function secure(w){w.webContents.setWindowOpenHandler(()=>({action:'deny'}));w.w
 // Linux 下 setLoginItemSettings 无效，按 XDG 规范写入 ~/.config/autostart；优先使用便携包内的启动器以处理沙箱参数。
 function setAutoStart(on){if(process.platform!=='linux'){app.setLoginItemSettings({openAtLogin:on,path:process.execPath,args:[]});return;}
  const file=path.join(app.getPath('appData'),'autostart','wuwa-tappo-offline.desktop');if(!on){fs.rmSync(file,{force:true});return;}
- const launcher=path.join(PORTABLE,'WuwaTappo-Offline.sh'),exec=fs.existsSync(launcher)?launcher:process.execPath,quoted='"'+exec.replace(/[\\"`$]/g,c=>'\\'+c)+'"';
- fs.mkdirSync(path.dirname(file),{recursive:true});fs.writeFileSync(file,['[Desktop Entry]','Type=Application','Name=Wuwa Tappo 离线版','Exec='+quoted.replace(/\\/g,'\\\\'),'Terminal=false','X-GNOME-Autostart-enabled=true',''].join('\n'));}
+ const launcher=path.join(PORTABLE,'WuwaTappo-Offline.sh'),exec=fs.existsSync(launcher)?launcher:process.execPath;
+ const content=require('./autostart.cjs').desktopEntry(exec,{allowNoSandbox:process.env.WUWA_ALLOW_NO_SANDBOX==='1',nativeWayland:process.env.WUWA_NATIVE_WAYLAND==='1'});
+ fs.mkdirSync(path.dirname(file),{recursive:true});fs.writeFileSync(file,content);}
 function menu(){return Menu.buildFromTemplate([{label:'收藏与搭配',click:showStudio},{label:'显示桌宠 / 回到屏幕角落',click:()=>{pet.show();place();}},{label:'鼠标穿透（Ctrl+Alt+P 可恢复）',type:'checkbox',checked:state.settings.passthrough,click:()=>{state.settings.passthrough=!state.settings.passthrough;applySettings();save();broadcast();}},{label:'响应键盘和鼠标',type:'checkbox',checked:state.settings.inputEnabled,click:()=>{state.settings.inputEnabled=!state.settings.inputEnabled;applySettings();save();broadcast();}},{type:'separator'},{label:'退出Wuwa Tappo 离线版',click:()=>app.quit()}]);}
-function input(key,down,side){if(!state.settings.inputEnabled)return;if(down&&pressed.has(key))return;if(down){pressed.add(key);const emote=core.registerTap(state,items);if(state.count===0){save();if(emote)pet?.webContents.send('emote',emote);}else laterSave();}else pressed.delete(key);const event={key,down,side,count:state.count,serial:++inputSerial};if(pet&&!pet.isDestroyed())pet.webContents.send('input',event);}
+function input(key,down){if(!state.settings.inputEnabled)return;if(down&&pressed.has(key))return;let side;if(down){pressed.add(key);side=nextHand;nextHand=nextHand==='left'?'right':'left';const emote=core.registerTap(state,items);if(state.count===0){save();if(emote)pet?.webContents.send('emote',emote);}else laterSave();}else pressed.delete(key);const event={key,down,side,count:state.count,serial:++inputSerial};if(pet&&!pet.isDestroyed())pet.webContents.send('input',event);}
 function startHook(){try{const {uIOhook,UiohookKey}=require('uiohook-napi');hook=uIOhook;const names=new Map();for(const [k,v]of Object.entries(UiohookKey))if(!names.has(v))names.set(v,k);
- hook.on('keydown',e=>{if(QA&&process.argv.includes('--selftest'))return;const key=names.get(e.keycode)||'Other';input(key,true,/^[QWERTASDFGZXCVB12345]$|Left|^Ctrl$|^Shift$|^Alt$|Tab|CapsLock/.test(key)?'left':'right');if(e.ctrlKey&&e.altKey&&['1','2','3','4','5'].includes(key)){const id=state.emotes[Number(key)-1];if(id)pet.webContents.send('emote',id);}});
- hook.on('keyup',e=>{if(QA&&process.argv.includes('--selftest'))return;input(names.get(e.keycode)||'Other',false);});hook.on('mousedown',e=>{if(QA&&process.argv.includes('--selftest'))return;input(e.button===1?'MouseLeft':e.button===2?'MouseRight':'MouseMiddle',true,e.button===1?'left':'right');});hook.on('mouseup',e=>{if(QA&&process.argv.includes('--selftest'))return;input(e.button===1?'MouseLeft':e.button===2?'MouseRight':'MouseMiddle',false);});hook.start();hookStatus='全局键盘与鼠标已连接';
+ hook.on('keydown',e=>{if(QA&&process.argv.includes('--selftest'))return;const key=names.get(e.keycode)||'Other';input(key,true);if(e.ctrlKey&&e.altKey&&['1','2','3','4','5'].includes(key)){const id=state.emotes[Number(key)-1];if(id)pet.webContents.send('emote',id);}});
+ hook.on('keyup',e=>{if(QA&&process.argv.includes('--selftest'))return;input(names.get(e.keycode)||'Other',false);});hook.on('mousedown',e=>{if(QA&&process.argv.includes('--selftest'))return;input(e.button===1?'MouseLeft':e.button===2?'MouseRight':'MouseMiddle',true);});hook.on('mouseup',e=>{if(QA&&process.argv.includes('--selftest'))return;input(e.button===1?'MouseLeft':e.button===2?'MouseRight':'MouseMiddle',false);});hook.start();hookStatus='全局键盘与鼠标已连接';
  }catch(e){hookStatus='全局输入暂不可用，可点击桌宠互动';fs.appendFileSync(path.join(dataDir,'errors.log'),String(e)+'\n');}status();}
 ipcMain.handle('init',()=>({state,items,filters:require('./catalog.json').filters,status:{hook:hookStatus,warning:saveWarning},monitors:screen.getAllDisplays().map((d,i)=>({id:i,label:`屏幕 ${i+1} · ${d.size.width}×${d.size.height}`}))}));
 ipcMain.handle('command',async(_,name,arg)=>{try{let result=null;switch(name){
@@ -56,12 +59,19 @@ ipcMain.handle('command',async(_,name,arg)=>{try{let result=null;switch(name){
  case 'emote':if(!state.owned[arg]||!items.some(x=>x.id===arg&&x.type==='emote'))throw Error('表情未获得');pet.webContents.send('emote',arg);return{ok:true};
  case 'settings':{pressed.clear();const old=state.settings;const next=core.settings({...old,...arg});if(next.autoStart!==old.autoStart){if(!app.isPackaged&&next.autoStart)throw Error('请从便携版开启开机启动');setAutoStart(next.autoStart);}state.settings=next;applySettings();if(next.scale!==old.scale||next.monitor!==old.monitor)place();break;}
  case 'recenter':place();pet.show();return{ok:true};
- case 'tap':if(hookStatus!=='全局键盘与鼠标已连接'){input('MouseLeft',true,'left');input('MouseLeft',false);}return{ok:true};
+ case 'tap':if(hookStatus!=='全局键盘与鼠标已连接'){input('MouseLeft',true);input('MouseLeft',false);}return{ok:true};
  case 'folder':await shell.openPath(dataDir);return{ok:true};
  case 'quit':app.quit();return{ok:true};
  default:throw Error('未知操作');}
  const saved=await save();broadcast();return{ok:true,result,warning:saved?'':saveWarning};}catch(e){return{ok:false,error:e.message};}});
-ipcMain.on('move',(_,dx,dy)=>{if(state.settings.passthrough||state.settings.lockDrag||state.settings.gameMode||!Number.isFinite(dx)||!Number.isFinite(dy))return;const [x,y]=pet.getPosition();const a=screen.getDisplayMatching(pet.getBounds()).workArea;const b=pet.getBounds();pet.setPosition(Math.round(Math.max(a.x-b.width+100,Math.min(a.x+a.width-100,x+dx))),Math.round(Math.max(a.y-250,Math.min(a.y+a.height-b.height+20,y+dy))));});
+ipcMain.on('move',(event,dx,dy)=>{
+ if(!pet||pet.isDestroyed()||event.sender!==pet.webContents||state.settings.passthrough||state.settings.lockDrag||state.settings.gameMode||!Number.isFinite(dx)||!Number.isFinite(dy))return;
+ const b=pet.getBounds(),a=screen.getDisplayMatching(b).workArea,{width,height}=petSize();
+ // setPosition round-trips the native size through DIP conversion on Windows.
+ // At fractional DPI that can add pixels on every move. Always use the saved scale,
+ // never the measured window size, so rounding cannot accumulate while dragging.
+ pet.setBounds({x:Math.round(Math.max(a.x-width+100,Math.min(a.x+a.width-100,b.x+dx))),y:Math.round(Math.max(a.y-250,Math.min(a.y+a.height-height+20,b.y+dy))),width,height});
+});
 ipcMain.on('resize-studio',(event,edge,dx,dy)=>{if(!studio||event.sender!==studio.webContents||!['n','s','e','w','ne','nw','se','sw'].includes(edge)||!Number.isFinite(dx)||!Number.isFinite(dy))return;studioRestoreBounds=null;const b=studio.getBounds();if(edge.includes('e'))b.width+=dx;if(edge.includes('s'))b.height+=dy;if(edge.includes('w')){b.x+=dx;b.width-=dx;}if(edge.includes('n')){b.y+=dy;b.height-=dy;}studio.setBounds(fitStudio(b));});
 if(!primaryInstance){app.quit();}else{
 app.on('second-instance',()=>{pet?.show();showStudio();});
@@ -74,8 +84,8 @@ app.whenReady().then(async()=>{
  globalShortcut.register('CommandOrControl+Alt+P',()=>{state.settings.passthrough=!state.settings.passthrough;applySettings();save();broadcast();});
  globalShortcut.register('F7',()=>{state.settings.gameMode=false;applySettings();save();broadcast();});globalShortcut.register('F8',()=>{state.settings.monitor=(state.settings.monitor+1)%screen.getAllDisplays().length;place();save();broadcast();});
  screen.on('display-removed',()=>place());screen.on('display-metrics-changed',()=>place());startHook();save();if(QA||process.argv.includes('--studio')||state.draws===0&&state.presets.length===0)showStudio();
- if(SELFTEST){for(const w of [pet,studio]){w.hide();w.show=()=>{};w.showInactive=()=>{};w.focus=()=>{};}}
- if(QA){global.__QA={state:()=>state,pet:()=>pet,studio:()=>studio,hook:()=>hookStatus,input};if(process.argv.includes('--selftest'))require('./qa.cjs')({app,pet,studio,items,getState:()=>state,save,dataDir,input});}
+ if(SELFTEST||DRAGTEST){for(const w of [pet,studio]){w.hide();w.show=()=>{};w.showInactive=()=>{};w.focus=()=>{};}}
+ if(QA){global.__QA={state:()=>state,pet:()=>pet,studio:()=>studio,hook:()=>hookStatus,input};if(process.argv.includes('--selftest'))require(DRAGTEST?'./qa-drag.cjs':'./qa.cjs')({app,pet,studio,items,getState:()=>state,save,dataDir,input});}
 });
 app.on('before-quit',e=>{if(quitting)return;e.preventDefault();quitting=true;clearTimeout(saveTimer);clearInterval(topTimer);clearInterval(pointerTimer);try{hook?.stop();}catch{}globalShortcut.unregisterAll();save().finally(()=>app.quit());});
 app.on('window-all-closed',()=>app.quit());}
