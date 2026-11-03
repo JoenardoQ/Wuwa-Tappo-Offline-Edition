@@ -25,7 +25,24 @@ module.exports=async({app,pet,studio,items,getState,save,dataDir,input})=>{
  await js(studio,"document.getElementById('closeResults').click()");const male=items.find(x=>x.starter&&x.roleId===1501);await js(studio,`window.petAPI.command('equip',${JSON.stringify(male.id)})`);await wait(400);assert.equal((await js(pet,'window.__petTest()')).character,male.id);results.push('换装同步至桌宠');
  const before=getState().count;input('A',true,'left');await wait(50);assert.equal((await js(pet,'window.__petTest()')).action,2);assert.equal(await js(pet,'document.querySelector(\'[data-key="A"]\').classList.contains("active")'),true);input('A',false);await wait(200);assert.equal(getState().count,before+1);assert.equal((await js(pet,'window.__petTest()')).action,1);assert.equal(await js(pet,'document.querySelector(\'[data-key="A"]\').classList.contains("active")'),false);results.push('输入事件、拍桌、复位、计数');
 
- getState().count=998;input('Q',true,'left');input('Q',true,'left');assert.equal(getState().count,999);input('Q',false);
+ const alternatingStart=getState().count,sequence=[];
+ for(const key of ['A','A','A','L','Space']){
+  input(key,true);await wait(35);const first=await js(pet,'window.__petTest()');sequence.push(first.action);
+  input(key,true);await wait(25);const repeat=await js(pet,'window.__petTest()');assert.equal(repeat.serial,first.serial);assert.equal(repeat.action,first.action);
+  input(key,false);await wait(25);assert.equal((await js(pet,'window.__petTest()')).action,first.action);
+ }
+ assert.deepEqual(sequence,[3,2,3,2,3]);assert.equal(getState().count,alternatingStart+5);
+ await wait(180);assert.equal((await js(pet,'window.__petTest()')).action,1);
+ await js(pet,"window.petAPI.command('settings',{inputEnabled:false})");input('A',true);input('A',false);await wait(30);assert.equal(getState().count,alternatingStart+5);
+ await js(pet,"window.petAPI.command('settings',{inputEnabled:true})");input('A',true);await wait(35);assert.equal((await js(pet,'window.__petTest()')).action,2);input('A',false);
+ if(global.__QA.hook()==='全局键盘与鼠标已连接'){
+  input('MouseLeft',true);await wait(35);assert.equal((await js(pet,'window.__petTest()')).action,3);const clicked=getState().count;
+  await js(pet,"drag={total:0};document.getElementById('stage').dispatchEvent(new PointerEvent('pointerup',{button:0}))");await wait(35);
+  assert.equal((await js(pet,'window.__petTest()')).action,3);assert.equal(getState().count,clicked);input('MouseLeft',false);
+ }
+ results.push('同键与不同键左右手交替、长按去重、松开不换手、暂停不推进、点击不重复拍左手');
+
+ getState().count=998;input('Q',true);input('Q',true);assert.equal(getState().count,999);input('Q',false);
  input('W',true,'left');input('W',true,'left');await wait(80);assert.equal(getState().count,0);assert.equal((await js(pet,'window.__petTest()')).count,'0');
  const popped=await js(pet,"[...document.querySelectorAll('.local-emotion-bubble')].map(x=>x.dataset.emote)");
  assert.equal(popped.length,1);assert(getState().emotes.includes(popped[0]));input('W',false);assert.equal(JSON.parse(fs.readFileSync(path.join(dataDir,'collection.json'))).count,0);

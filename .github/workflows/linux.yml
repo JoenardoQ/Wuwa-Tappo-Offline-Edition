@@ -1,0 +1,45 @@
+name: Linux portable
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - name: Install virtual desktop test dependencies
+        run: sudo apt-get update && sudo apt-get install -y xvfb openbox libxtst6 libnss3 libatk-bridge2.0-0 libgtk-3-0 libgbm1 libasound2t64
+      - name: Test UI on X11 virtual desktop
+        env:
+          WUWA_ALLOW_NO_SANDBOX: '1'
+        run: xvfb-run -a sh -c 'openbox >/tmp/wuwa-openbox.log 2>&1 & npm run test:ui'
+      - run: npm run build
+      - name: Smoke test packaged launcher with isolated profile
+        env:
+          WUWA_ALLOW_NO_SANDBOX: '1'
+        run: |
+          export WUWA_QA_OUTPUT="$RUNNER_TEMP/wuwa-packaged-qa"
+          mkdir -p "$WUWA_QA_OUTPUT"
+          xvfb-run -a sh -c 'openbox >/tmp/wuwa-packaged-openbox.log 2>&1 & timeout 100s dist/WuwaTappo-Offline-*/WuwaTappo-Offline.sh --qa --selftest --interactive-test'
+          node -e 'const r=require(process.env.WUWA_QA_OUTPUT+"/result.json");if(!r.ok)process.exit(1);console.log(r.results.length+" packaged UI checks passed")'
+      - name: Package tar.gz
+        run: |
+          cd dist
+          dir=$(ls -d WuwaTappo-Offline-*/ | head -n1)
+          tar -czf WuwaTappo-Offline-Linux-x64.tar.gz "${dir%/}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WuwaTappo-Offline-Linux-x64
+          path: dist/*.tar.gz
+          retention-days: 7
+          if-no-files-found: error
