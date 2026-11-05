@@ -14,7 +14,8 @@ moved=0 installed=0 newpid=''
 rollback() {
  if [ -n "$newpid" ]; then kill "$newpid" 2>/dev/null || true; sleep 1; fi
  if [ "$installed" = 1 ]; then mv -- "$target" "$stage" || return 1; fi
- if [ "$moved" = 1 ]; then mv -- "$backup" "$target" || return 1; (cd "$target" && exec ./WuwaTappo-Offline.sh) </dev/null >/dev/null 2>&1 & fi
+ if [ "$moved" = 1 ]; then mv -- "$backup" "$target" || return 1; fi
+ if ! kill -0 "$oldpid" 2>/dev/null && [ -f "$target/WuwaTappo-Offline.sh" ]; then (cd "$target" && exec ./WuwaTappo-Offline.sh) </dev/null >/dev/null 2>&1 & fi
  printf '{"ok":false,"version":"%s","error":"Update failed; previous version restored"}' "$version" > "$result"
 }
 n=0

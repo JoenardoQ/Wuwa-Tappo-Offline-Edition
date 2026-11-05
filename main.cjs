@@ -63,7 +63,7 @@ ipcMain.handle('command',async(_,name,arg)=>{try{let result=null;switch(name){
  case 'window':studioWindow(arg);return{ok:true};
  case 'favorite':if(!items.some(x=>x.id===arg))throw Error('物品不存在');state.favorites=state.favorites.includes(arg)?state.favorites.filter(x=>x!==arg):[...state.favorites,arg];break;
  case 'preset-save':{const label=String(arg||'我的搭配').trim().slice(0,24);if(state.presets.length>=12)throw Error('最多保存 12 套搭配');state.presets.push({id:Date.now().toString(36),name:label,character:state.character,accessory:state.accessory,customAccessory:state.customAccessory,accessoryLayouts:structuredClone(state.accessoryLayouts),emotes:[...state.emotes]});break;}
- case 'preset-load':{const p=state.presets.find(x=>x.id===arg);if(!p)throw Error('搭配不存在');state.character=p.character;state.accessory=p.accessory;state.customAccessory=p.customAccessory||'';state.accessoryLayouts={...state.accessoryLayouts,...(p.accessoryLayouts||{})};state.emotes=[...p.emotes];break;}
+ case 'preset-load':{const p=state.presets.find(x=>x.id===arg);if(!p)throw Error('搭配不存在');core.loadPreset(state,items,p);break;}
  case 'preset-delete':state.presets=state.presets.filter(x=>x.id!==arg);break;
  case 'emote':if(!state.owned[arg]||!items.some(x=>x.id===arg&&x.type==='emote'))throw Error('表情未获得');pet.webContents.send('emote',arg);return{ok:true};
  case 'settings':{pressed.clear();const old=state.settings;const next=core.settings({...old,...arg});if(next.autoStart!==old.autoStart){if(!app.isPackaged&&next.autoStart)throw Error('请从便携版开启开机启动');setAutoStart(next.autoStart);}state.settings=next;applySettings();if(next.scale!==old.scale||next.monitor!==old.monitor)place();break;}

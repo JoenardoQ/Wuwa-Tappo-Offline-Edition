@@ -24,6 +24,6 @@ try {
 } catch {
  $failure=$_.Exception.Message
  if($newProcess -and !$newProcess.HasExited){ & taskkill.exe /PID $newProcess.Id /T /F 2>$null | Out-Null;Start-Sleep -Milliseconds 800 }
- try {if($installed){Move-Checked $target $stage};if($moved){Move-Checked $backup $target};if($moved){Start-Process -FilePath (Join-Path $target 'WuwaTappo-Offline.exe') -WorkingDirectory $target -WindowStyle Hidden | Out-Null}} catch { $failure+='; recovery: '+$_.Exception.Message }
+ try {if($installed){Move-Checked $target $stage};if($moved){Move-Checked $backup $target};if(!(Get-Process -Id ([int]$p.pid) -ErrorAction SilentlyContinue) -and (Test-Path -LiteralPath (Join-Path $target 'WuwaTappo-Offline.exe'))){Start-Process -FilePath (Join-Path $target 'WuwaTappo-Offline.exe') -WorkingDirectory $target -WindowStyle Hidden | Out-Null}} catch { $failure+='; recovery: '+$_.Exception.Message }
  @{ok=$false;version=$p.version;error=$failure;backup=$backup} | ConvertTo-Json | Set-Content -LiteralPath $result -Encoding UTF8
 }
