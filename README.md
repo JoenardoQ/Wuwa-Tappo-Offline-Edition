@@ -1,61 +1,76 @@
-> **版权声明：本项目使用的 Wuwa Tappo／《鸣潮》角色、美术、表情及原版界面资源，版权归官方及相应权利人所有。本项目为非官方个人离线娱乐修改版，不代表官方，也不取得原版素材版权。请勿付费传播。**
-> 字体与其他第三方依赖保留各自版权；仓库中的 MIT 许可仅适用于本项目可授权的独立代码，不覆盖官方或第三方资源。
+# Wuwa Tappo Offline Edition 🐾
 
-# Wuwa Tappo Offline Edition
+喵～欢迎把喜欢的小伙伴带回桌面！这里是 **Wuwa Tappo 的非官方离线桌宠版本**：陪你敲键盘、拍桌桌，换上喜欢的角色与配件，再慢慢攒满自己的小图鉴。想直接集齐，也准备好一键按钮啦 ฅ՞•ﻌ•՞ฅ
 
-## Release 下载
+## ✨ 我们能做什么喵？
 
-**[前往最新 Release](https://github.com/JoenardoQ/Wuwa-Tappo-Offline-Edition/releases/latest)**
+- **桌面陪伴与键鼠互动**：42 键实时映射，左右手交替拍桌；计数超过 999 后归零，并随机浮现一个当前装备的表情。支持拖动、透明度、大小、鼠标穿透和置顶。
+- **角色、配件、表情自由搭配**：内置 **899 件收藏**，包括 **260 个角色皮肤、135 个配件、504 个表情**。背包、图鉴、收藏、搭配预设和系列／角色／稀有度筛选都能在本机使用。
+- **慢慢收集，或一键集齐**：新存档只开放男女漂泊者经典形象、阿布配件与八个基础表情，共 **11 件**。想直接玩全图鉴时，在背包或图鉴点击 **一键全图鉴**，补齐未拥有的收藏，已有副本和抽取记录会保留。
+- **单抽、十连，随时开箱**：本地开箱次数无限、免费；合成支持单次和十连，并保留每件物品的最后一份。合成仍需要多余副本，材料规则见下面的小表格喵。
+- **自己的图片也能当配件**：在 **背包 → 自定义配件与位置** 导入 JPG/JPEG/PNG，拖动预览调整位置，也能调大小、旋转。原有配件同样可以调整，位置按角色分别记忆，并随搭配预设保存。
+- **直接在程序里更新**：进入 **设置 → 检查并更新**，自动从本仓库 GitHub Release 下载、校验、替换并重启，后续更新无需手动下载或解压。收藏、设置和自定义图片继续保留。
+- **Windows / Linux 便携运行**：提供 Windows x64 和 Linux x64 包，无需官方账号。平时离线使用，只有主动检查更新时连接 GitHub；收藏和自定义图片都留在自己的电脑里。
 
-**[直接下载 Windows x64 便携 ZIP · v1.0.6](https://github.com/JoenardoQ/Wuwa-Tappo-Offline-Edition/releases/download/v1.0.6/WuwaTappo-Offline-42keys-v1.0.6.zip)**
-[下载 SHA-256 校验文件](https://github.com/JoenardoQ/Wuwa-Tappo-Offline-Edition/releases/download/v1.0.6/WuwaTappo-Offline-42keys-v1.0.6.sha256.txt)
+### 🧶 相比原版，新增或改动了哪些功能？
 
-下载上面的便携 ZIP，完整解压后运行文件夹内的 **WuwaTappo-Offline.exe**。无需安装 Node.js，也无需官方账号。请保留全部文件，不能只拷贝 exe。GitHub 自动生成的 Source code 压缩包是源码，不是可直接运行的程序。
-
-本次 v1.0.6 新增一键全图鉴、背包自定义图片配件与位置编辑，以及直接从 GitHub Release 下载、校验、替换并重启的自动更新。完整更新说明见 [CHANGELOG.md](CHANGELOG.md)，便携包内也附有此文件。
-
-当前支持 Windows x64 与 Linux x64。正常使用不访问网络；仅主动点击“检查并更新”时连接本仓库的 GitHub Release。收藏、搭配、自定义图片和设置只保存在本机。
-
-### Linux x64
-
-**[下载 Linux x64 便携 tar.gz · v1.0.6](https://github.com/JoenardoQ/Wuwa-Tappo-Offline-Edition/releases/download/v1.0.6/WuwaTappo-Offline-Linux-x64-v1.0.6.tar.gz)**
-
-完整解压后通过启动器运行：
-
-```bash
-tar -xzf WuwaTappo-Offline-Linux-x64-v1.0.6.tar.gz
-cd WuwaTappo-Offline-1.0.6
-./WuwaTappo-Offline.sh
-```
-
-- 启动器完整保留传入参数。在存在 XWayland 的 Wayland 会话中自动使用 X11；设置 `WUWA_NATIVE_WAYLAND=1` 可主动使用原生 Wayland，但窗口定位、置顶、全局输入等能力受桌面环境限制。
-- 默认保留 Chromium 进程隔离。Ubuntu 等系统若限制沙箱而无法启动，可由管理员正确配置沙箱支持；仅在主动接受关闭进程隔离的风险时，使用 `WUWA_ALLOW_NO_SANDBOX=1 ./WuwaTappo-Offline.sh`。`npm start` 和界面测试采用相同策略，不会自动关闭隔离。
-- 全局键鼠监听基于 X11/libXtst，Wayland 下通常只能收到 XWayland 窗口的输入。钩子能启动不代表能监听所有原生 Wayland 应用。
-- 透明窗口需要桌面合成器；托盘需要 AppIndicator/StatusNotifier 支持，GNOME 可能需要相应扩展。Linux 托盘请用菜单打开“收藏与搭配”。
-- 开机启动写入 XDG 配置目录下的 `autostart/wuwa-tappo-offline.desktop`；保留空格、百分号等路径字符。开启时会保存本次主动选择的兼容模式。更换便携目录后，请关闭再开启一次开机启动以更新路径。
-- Linux 存档位于 `$XDG_CONFIG_HOME/WuwaTappoOffline/collection.json`，未设置 XDG_CONFIG_HOME 时为 `~/.config/WuwaTappoOffline/collection.json`。
-
-## 与官方版的差别
-
-| 项目 | 本离线版的处理 |
+| 功能 | 本离线版的新增或改动 |
 | --- | --- |
-| 账号与联机 | 不登录官方账号，不连接官方服务器；不提供官方联机、房间、好友、排行榜或云存档，不修改官方收藏。 |
-| 初始收藏 | 仅开放男女漂泊者经典形象、阿布配件和八个阿布基础表情，共 11 件；其余通过本地开箱、合成或主动点击“一键全图鉴”获得。 |
-| 开箱 | 单抽、十连均无限免费。采用本地规则：普通 65%、珍稀 25%、稀有 9%、史诗 1%；十连至少珍稀，最多 50 抽获得史诗。这些是离线版规则，不承诺与官方概率相同。 |
-| 合成 | 升阶消耗 10 份、平阶消耗 5 份同品类同稀有度多余副本；支持单次或十连，保留每件物品最后一份。 |
-| 键盘与拍桌 | 在原有底部胶囊内增加 42 键实时映射键盘，向右倾斜 30°，使用圆润字体与轻微立体效果。每次有效键鼠输入交替触发左右手拍桌及计数；同一按键长按产生的重复事件不重复计数或换手。 |
-| 计数 | 计数从 999 再增加一次归零，并从当前装备的表情中随机浮现一个。未装备表情时只归零；按住同一个键不会重复计数。 |
-| 表情 | 使用原始互动图像，保留原版气泡边框、32/30 像素按钮布局、80 像素浮现图像、1 秒上浮轨迹及按压弹性。侧边气泡不再使用图鉴缩略图；点击背包上方任意表情槽的“更换”，可沿用主页面角色、稀有度下拉筛选已拥有表情并立即替换。 |
-| 窗口 | 强制始终置顶，失焦或层级变化后自动恢复，不主动抢输入焦点。Windows 安全桌面和独占全屏不受普通应用置顶控制。 |
-| 图鉴与搭配 | 保留本地背包、收藏、搭配预设、稀有度分组，支持系列、角色和稀有度组合筛选，以及连续“显示更多”。图鉴只渲染当前视口附近的卡片，滚动时逐段更新。 |
-| 自定义配件 | 在背包导入 JPG/JPEG/PNG，调整位置、大小和旋转；按角色分别记忆，也随搭配预设保存，仅在本机使用。 |
-| 更新与存档 | 设置中直接从本仓库 GitHub Release 下载、校验、替换并重启；历史收藏、图片与设置沿用固定用户目录，不连接官方更新或账号服务。 |
+| 42 键可视键盘 | 在底部胶囊内加入实时按键映射，键盘向右倾斜 30°，使用圆润字体与轻微立体效果；每次有效输入左右手交替，长按重复事件不会重复计数或换手。 |
+| 一键全图鉴 | 主动点击即可补齐 899 件内置收藏；初次启动仍保留从 11 件开始的收集过程。解锁只作用于本机离线存档。 |
+| 无限免费开箱 | 单抽、十连不限次数。采用本地规则：普通 65%、珍稀 25%、稀有 9%、史诗 1%；十连至少一件珍稀或以上，最多 50 抽获得史诗。这些概率与保底是本离线版规则。 |
+| 本地合成 | 支持单次与十连。升阶每次消耗 10 份、平阶每次消耗 5 份同品类同稀有度多余副本，保留每件物品最后一份；不承诺与官方合成规则一致。 |
+| 自定义图片配件 | 在背包导入自己的 JPG/JPEG/PNG，调整位置、大小、旋转并保存；图片只复制到本机，不上传。 |
+| 三位计数与随机表情 | 999 再增加一次会归零，并从当前装备的表情中随机浮现一个；未装备表情时只归零。 |
+| 本地存档与版本迁移 | 收藏、搭配、表情、配件位置与设置保存在固定用户目录，换版本或解压目录时继续读取。 |
+| GitHub Release 自动更新 | 自动下载对应平台正式包、校验 SHA-256、保存存档、替换并重启；新版启动失败时尝试恢复旧版。 |
+| 窗口与平台适配 | 提供窗口放大缩小、边缘拖动调整与 Linux x64 便携包；桌宠保持置顶并恢复意外改变的层级，图鉴采用按视口加载以减少卡顿。 |
 
-内置 899 个收集物：260 个角色皮肤、135 个配件、504 个表情，对应 3098 张离线图像。资源为本仓库当前快照，不会自动跟随官方新增内容。
+### 🌙 离线版减少了哪些功能？
+
+这些联网能力没有搬进来，下载前先看一眼喵：
+
+| 功能或内容 | 本离线版的范围 |
+| --- | --- |
+| 官方账号与服务器 | 不提供官方账号登录、账号注销或官方服务器连接。 |
+| 官方联机与社交 | 不提供官方联机、房间、好友、排行榜等在线服务。 |
+| 官方云存档与收藏同步 | 不同步、不修改官方账号收藏；离线版的抽取、全图鉴和搭配只在本机生效。 |
+| 官方新增资源与活动内容 | 内置资源是当前仓库快照，不会自动同步官方新增角色、皮肤、配件、表情或活动内容。只有本项目后续发布包含这些资源的新版本时，才会随本项目更新。 |
+| 官方更新渠道 | 更新按钮只检查本仓库的 GitHub Release，不安装官方客户端更新。 |
+
+**原版的可爱也有好好保留喵。** 角色、美术、表情和界面资源沿用原版素材；保留并适配背包、图鉴、预设、筛选与表情互动。表情使用原始互动图像，沿用气泡边框、上浮轨迹与按压弹性；换表情可以直接点击背包上方对应位置，再在主页面筛选并选择。
+
+当前内置素材共 **3098 张离线图像**。桌宠置顶仍受系统控制：Windows 安全桌面、独占全屏，以及不同 Linux 桌面环境下的表现，不属于普通窗口能完全控制的范围。
 
 <img src="docs/images/pet.png" alt="42键桌宠和原版表情气泡" width="320"> <img src="docs/images/emote.png" alt="原版表情浮现" width="320">
 
-## 快捷键与交互
+## 💛 官方与原作者 Credit
+
+先把感谢的小鱼干递给原作者们喵！这个离线版本能做出来，离不开 **Wuwa Tappo 原版项目、开发者及美术／表情创作者**的工作，也离不开 **《鸣潮》官方与相关角色、素材的创作者及权利人**。
+
+- **原版作品与素材**：本项目使用的 Wuwa Tappo／《鸣潮》角色、美术、表情、原版界面及动画资源，版权归官方、原作者及相应权利人所有。相关素材不是本项目原创。
+- **本项目的工作**：主要是离线逻辑、42 键映射、本地收藏、自定义配件、自动更新及跨平台适配。本项目为非官方个人离线娱乐修改版，不代表官方，也不取得原版素材版权。请勿付费传播。
+- **社区贡献**：感谢 [@juliy819](https://github.com/juliy819) 在 [PR #2](https://github.com/JoenardoQ/Wuwa-Tappo-Offline-Edition/pull/2) 中提供 Linux 支持贡献，也感谢反馈问题与参与测试的小伙伴。
+- **字体与开源依赖**：975MaruSC 字体、Electron、Chromium、uiohook-napi 等保留各自版权与许可。仓库的 [MIT 许可](LICENSE) 仅适用于本项目可授权的独立代码，不覆盖官方或第三方资源；具体来源见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+
+如果喜欢这些角色和画风，也请把支持送给原版与创作者们喵。
+
+## 🎁 Release：把小伙伴带回家
+
+**[前往最新 Release](https://github.com/JoenardoQ/Wuwa-Tappo-Offline-Edition/releases/latest)** · **[查看 v1.0.6 更新说明](https://github.com/JoenardoQ/Wuwa-Tappo-Offline-Edition/releases/tag/v1.0.6)**
+
+| 平台 | 便携包 | 校验文件 |
+| --- | --- | --- |
+| Windows x64 | [下载 v1.0.6 ZIP](https://github.com/JoenardoQ/Wuwa-Tappo-Offline-Edition/releases/download/v1.0.6/WuwaTappo-Offline-42keys-v1.0.6.zip) | [SHA-256](https://github.com/JoenardoQ/Wuwa-Tappo-Offline-Edition/releases/download/v1.0.6/WuwaTappo-Offline-42keys-v1.0.6.sha256.txt) |
+| Linux x64 | [下载 v1.0.6 tar.gz](https://github.com/JoenardoQ/Wuwa-Tappo-Offline-Edition/releases/download/v1.0.6/WuwaTappo-Offline-Linux-x64-v1.0.6.tar.gz) | [SHA-256](https://github.com/JoenardoQ/Wuwa-Tappo-Offline-Edition/releases/download/v1.0.6/WuwaTappo-Offline-Linux-x64-v1.0.6.sha256.txt) |
+
+首次使用时，完整解压对应平台的便携包：Windows 运行 **WuwaTappo-Offline.exe**，Linux 运行 **WuwaTappo-Offline.sh**。无需安装 Node.js，请保留文件夹中的全部文件，不能只拷贝可执行文件。GitHub 自动生成的 **Source code** 压缩包是源码，不是便携程序。
+
+**已经用上 v1.0.6？以后点“设置 → 检查并更新”就好啦。** 程序会直接下载、校验、替换并重启。v1.0.5 及更早版本还没有这个入口，需要先换到本版一次，之后就不用手动下载后续更新了喵。
+
+更多版本变化见 [CHANGELOG.md](CHANGELOG.md)。
+
+## 🐾 快捷键与互动小抄
 
 | 操作 | 快捷键或方法 |
 | --- | --- |
@@ -76,11 +91,11 @@ cd WuwaTappo-Offline-1.0.6
 | 自定义配件 | 背包 → 自定义配件与位置 → 导入 JPG / PNG，在预览中拖动或调整滑杆，自动保存 |
 | 自动更新 | 设置 → 检查并更新，完成下载与校验后自动重启 |
 
-若桌宠无法点击，先按 **F7** 关闭游戏模式，再用 **Ctrl+Alt+P** 切换鼠标穿透，或从系统托盘打开设置。
+小伙伴突然点不动了？先按 **F7** 关闭游戏模式，再用 **Ctrl+Alt+P** 切换鼠标穿透，或从系统托盘打开设置。
 
-## 存档与升级
+## 📦 收藏、配件和存档放在哪里？
 
-从 v1.0.3 起，存档固定保存在 **%APPDATA%/WuwaTappoOffline/collection.json**，备份为 collection.json.bak。可以在设置里点击“查看存档”打开，不受 ZIP 版本号和解压目录变化影响。
+收藏会乖乖留在本机喵。从 v1.0.3 起，Windows 存档固定保存在 **%APPDATA%/WuwaTappoOffline/collection.json**，备份为 collection.json.bak。可以在设置里点击“查看存档”打开，不受 ZIP 版本号和解压目录变化影响。
 
 首次启动 v1.0.3 或更新版本时，优先继承当前 exe 旁的旧 data/collection.json；若没有，会在解压目录附近以及 Downloads 下的 WuwaTappo-Offline 文件夹中寻找最近的有效旧存档。迁移前自动复制到固定存档目录的 migration-backups，旧文件保留不动。已有固定存档后，后续版本直接读取它，不会重复导入旧文件。
 
@@ -90,7 +105,30 @@ cd WuwaTappo-Offline-1.0.6
 
 v1.0.5 及更早版首次升级到本版：退出旧版，完整解压新便携包后运行；之后即可使用内置更新。历史收藏通常无需手动复制 data。请在首次迁移成功前保留旧目录。如果旧版放在其他任意位置，可先把它的 data 文件夹放到新版 exe 旁再首次启动。发行包不包含任何用户存档、账号或日志。
 
-## 从源码运行与打包
+<details>
+<summary>🐧 Linux 启动与兼容说明（点击展开）</summary>
+
+完整解压后通过启动器运行：
+
+```bash
+tar -xzf WuwaTappo-Offline-Linux-x64-v1.0.6.tar.gz
+cd WuwaTappo-Offline-1.0.6
+./WuwaTappo-Offline.sh
+```
+
+- 启动器完整保留传入参数。在存在 XWayland 的 Wayland 会话中自动使用 X11；设置 `WUWA_NATIVE_WAYLAND=1` 可主动使用原生 Wayland，但窗口定位、置顶、全局输入等能力受桌面环境限制。
+- 默认保留 Chromium 进程隔离。Ubuntu 等系统若限制沙箱而无法启动，可由管理员正确配置沙箱支持；仅在主动接受关闭进程隔离的风险时，使用 `WUWA_ALLOW_NO_SANDBOX=1 ./WuwaTappo-Offline.sh`。`npm start` 和界面测试采用相同策略，不会自动关闭隔离。
+- 全局键鼠监听基于 X11/libXtst，Wayland 下通常只能收到 XWayland 窗口的输入。钩子能启动不代表能监听所有原生 Wayland 应用。
+- 透明窗口需要桌面合成器；托盘需要 AppIndicator/StatusNotifier 支持，GNOME 可能需要相应扩展。Linux 托盘请用菜单打开“收藏与搭配”。
+- 开机启动写入 XDG 配置目录下的 `autostart/wuwa-tappo-offline.desktop`；保留空格、百分号等路径字符。开启时会保存本次主动选择的兼容模式。更换便携目录后，请关闭再开启一次开机启动以更新路径。
+- Linux 存档位于 `$XDG_CONFIG_HOME/WuwaTappoOffline/collection.json`，未设置 XDG_CONFIG_HOME 时为 `~/.config/WuwaTappoOffline/collection.json`。
+
+</details>
+
+<details>
+<summary>🛠️ 开发与验证说明（点击展开）</summary>
+
+### 从源码运行与打包
 
 需要 Windows x64 或 Linux x64，以及 Node.js 24；首次安装依赖及 Electron 运行程序需要联网。
 
@@ -108,8 +146,10 @@ npm run build
 
 输出位于 `dist/WuwaTappo-Offline-1.0.6/`。GitHub Actions 分别在 Windows 和 Linux 上安装依赖、运行测试、构建 ZIP / tar.gz。Linux 工作流还在 X11 虚拟桌面中运行界面测试及便携启动器测试；其中关闭隔离仅用于 CI 的显式兼容模式。
 
-## 验证与许可范围
+### 验证方式与平台边界
 
-`npm test` 验证初始收藏、资源完整性、抽取、合成、存档迁移、计数归零和装备表情选择。`npm run test:ui` 在独立存档中检查换装、输入、表情、置顶恢复、连续加载、筛选及保存，结果写入 `qa-output/result.json`；需要桌面会话。Linux 可在带窗口管理器的 Xvfb 环境中测试；原生 GNOME/KDE/Wayland 的桌面行为仍需实机验证。`npm run test:drag` 在独立存档和原生窗口中通过实际拖动入口测试 5 种屏幕缩放 × 3 种桌宠大小，每个组合连续移动 120 次，并检查异常尺寸恢复与拖动禁用规则；不会改动系统显示设置，结果写入 `qa-output/drag/result.json`。
+`npm test` 验证初始收藏、资源完整性、抽取、合成、存档迁移、计数归零、表情替换、全图鉴、自定义配件位置，以及自动更新校验、进程交接和失败回滚。`npm run test:ui` 在独立存档中检查换装、输入、表情、置顶恢复、连续加载、筛选及保存，结果写入 `qa-output/result.json`；需要桌面会话。Linux 可在带窗口管理器的 Xvfb 环境中测试；原生 GNOME/KDE/Wayland 的桌面行为仍需实机验证。`npm run test:drag` 在独立存档和原生窗口中通过实际拖动入口测试 5 种屏幕缩放 × 3 种桌宠大小，每个组合连续移动 120 次，并检查异常尺寸恢复与拖动禁用规则；不会改动系统显示设置，结果写入 `qa-output/drag/result.json`。
 
 独立代码许可见 [LICENSE](LICENSE)，官方美术、字体、界面资源及依赖说明见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+
+</details>
