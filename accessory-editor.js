@@ -1,0 +1,17 @@
+let editView=null,editDrag=null;
+const editFields={x:'X',y:'Y',scale:'Scale',rotation:'Rotation'};
+$('unlockAll').onclick=async()=>{const r=await command('unlock-all');if(r.ok){$('unlockStatus').textContent='已集齐 '+items.length+' 件';toast(r.result?'已解锁 '+r.result+' 件收藏':'全部图鉴已解锁');}};
+function drawAccessoryEditor(){if(!editView){$('editAccessory').hidden=true;return;}$('editAccessory').hidden=false;$('editAccessory').src=editView.image;$('editAccessory').style.transform=Accessories.transform(editView,200);for(const [key,suffix]of Object.entries(editFields)){$('accessory'+suffix).value=editView[key];$('accessory'+suffix+'Value').textContent=key==='scale'?Math.round(editView[key]*100)+'%':Math.round(editView[key])+(key==='rotation'?'°':'');}}
+function syncAccessoryEditor(){if(!$('accessoryEditor').open||editDrag)return;const character=map.get(state.character);$('editHead').src=character.layers.head1;$('editBody').src=character.layers.body1;const choice=$('accessoryChoice');choice.replaceChildren();const add=(value,name)=>{const option=el('option','',name);option.value=value;choice.append(option);};add('','不佩戴配件');for(const a of state.customAccessories)add(a.id,'自定义 · '+a.name);for(const a of items.filter(x=>x.type==='accessory'&&state.owned[x.id]))add(a.id,a.name);editView=Accessories.view(state,items);choice.value=editView?.id||'';for(const suffix of Object.values(editFields))$('accessory'+suffix).disabled=!editView;$('resetAccessory').disabled=!editView;drawAccessoryEditor();}
+async function saveAccessoryLayout(){if(!editView)return;const result=await command('accessory-layout',{id:editView.id,character:state.character,layout:editView});$('accessoryFeedback').textContent=result.ok?(result.warning||'已保存，桌宠同步生效'):result.error;}
+$('editAccessories').onclick=()=>{closeFilters();$('accessoryEditor').showModal();syncAccessoryEditor();};
+$('closeAccessoryEditor').onclick=()=>$('accessoryEditor').close();
+$('accessoryChoice').onchange=async e=>{const id=e.target.value;await command(id.startsWith('custom:')||!id?'custom-equip':'equip',id);syncAccessoryEditor();};
+$('importAccessory').onclick=async()=>{const b=$('importAccessory');b.disabled=true;try{const r=await command('custom-import');if(r.ok&&!r.canceled){syncAccessoryEditor();$('accessoryFeedback').textContent='已导入并佩戴，可拖动图片调整位置';}}finally{b.disabled=false;}};
+for(const [key,suffix]of Object.entries(editFields)){const input=$('accessory'+suffix);input.oninput=()=>{if(editView){editView={...editView,[key]:Number(input.value)};drawAccessoryEditor();}};input.onchange=saveAccessoryLayout;}
+$('resetAccessory').onclick=async()=>{if(editView)await command('accessory-layout',{id:editView.id,character:state.character,reset:true});syncAccessoryEditor();};
+$('editAccessory').onpointerdown=e=>{if(e.button!==0||!editView)return;e.preventDefault();const factor=$('accessoryStage').getBoundingClientRect().width/$('accessoryStage').offsetWidth;editDrag={clientX:e.clientX,clientY:e.clientY,x:editView.x,y:editView.y,factor};$('editAccessory').setPointerCapture(e.pointerId);};
+$('editAccessory').onpointermove=e=>{if(!editDrag)return;editView={...editView,...Accessories.layout({...editView,x:editDrag.x+(e.clientX-editDrag.clientX)/editDrag.factor,y:editDrag.y+(e.clientY-editDrag.clientY)/editDrag.factor})};drawAccessoryEditor();};
+$('editAccessory').onpointerup=async()=>{if(!editDrag)return;editDrag=null;await saveAccessoryLayout();};
+$('editAccessory').onpointercancel=()=>{editDrag=null;syncAccessoryEditor();};
+petAPI.onState(syncAccessoryEditor);

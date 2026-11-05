@@ -1,12 +1,12 @@
 {
   "name": "wuwa-offline-companion",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "private": true,
   "description": "Personal offline desktop companion",
   "main": "main.cjs",
   "scripts": {
     "start": "node scripts/start.cjs",
-    "test": "node --test test.cjs test-platform.cjs",
+    "test": "node --test test.cjs test-platform.cjs test-features.cjs test-updater.cjs",
     "test:ui": "node scripts/test-ui.cjs",
     "test:drag": "node scripts/test-drag.cjs",
     "build": "node scripts/build.cjs",

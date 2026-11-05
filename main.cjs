@@ -1,6 +1,8 @@
-const {app,BrowserWindow,ipcMain,screen,Tray,Menu,nativeImage,globalShortcut,session,shell}=require('electron');
+const {app,BrowserWindow,ipcMain,screen,Tray,Menu,nativeImage,globalShortcut,session,shell,dialog,protocol}=require('electron');
 const fs=require('fs'),path=require('path');
 const core=require('./core.cjs'),storage=require('./storage.cjs'),{items}=require('./catalog.json');
+const accessories=require('./accessories.js'),customAssets=require('./custom-assets.cjs'),updater=require('./updater.cjs');
+protocol.registerSchemesAsPrivileged([{scheme:'wuwa-asset',privileges:{standard:true,secure:true,supportFetchAPI:true}}]);
 const QA=process.argv.includes('--qa'),PORTABLE=app.isPackaged?path.dirname(process.execPath):__dirname;
 const DRAGTEST=QA&&process.argv.includes('--test-drag');
 const SELFTEST=QA&&process.argv.includes('--selftest')&&!DRAGTEST&&!process.argv.includes('--snapshot')&&!process.argv.includes('--interactive-test');
@@ -9,6 +11,8 @@ fs.mkdirSync(dataDir,{recursive:true});app.setName('Wuwa Tappo 离线版');app.s
 const primaryInstance=app.requestSingleInstanceLock();
 const savePath=path.join(dataDir,'collection.json'),profile=primaryInstance&&!QA?storage.initProfile({dataDir,portableDir:PORTABLE,searchRoots:[app.getPath('downloads')],items}):{state:core.initial(items),warning:''};let state=profile.state,saveWarning=profile.warning;
 let pet,studio,tray,hook,hookStatus='正在连接键盘',saveTimer,quitting=false,pressed=new Set(),inputSerial=0,nextHand='left',topTimer,pointerTimer,lastIgnore;
+let updateStatus={phase:'idle',text:'点击后自动下载、校验并重启更新',progress:0};try{const last=JSON.parse(fs.readFileSync(path.join(dataDir,'update-result.json'),'utf8').replace(/^\uFEFF/,''));updateStatus.text=last.ok?'已成功更新到 v'+last.version:'上次更新未完成，已尝试恢复旧版。可重试更新。';}catch{}
+const update=updater.create({version:require('./package.json').version,platform:process.platform,arch:process.arch,portableDir:PORTABLE,dataDir,sourceDir:__dirname,isPackaged:app.isPackaged,onStatus:s=>{updateStatus=s;for(const w of windows())w.webContents.send('update-status',s);},beforeInstall:save,quit:()=>app.quit()});
 const writeState=storage.createWriter(savePath);
 async function save(){try{await writeState(state);return true;}catch(e){saveWarning='收藏保存失败，请检查文件夹写入权限';status();return false;}}
 function laterSave(){if(!saveTimer)saveTimer=setTimeout(()=>{saveTimer=null;save();},3000);}
@@ -43,18 +47,23 @@ function startHook(){try{const {uIOhook,UiohookKey}=require('uiohook-napi');hook
  hook.on('keydown',e=>{if(QA&&process.argv.includes('--selftest'))return;const key=names.get(e.keycode)||'Other';input(key,true);if(e.ctrlKey&&e.altKey&&['1','2','3','4','5'].includes(key)){const id=state.emotes[Number(key)-1];if(id)pet.webContents.send('emote',id);}});
  hook.on('keyup',e=>{if(QA&&process.argv.includes('--selftest'))return;input(names.get(e.keycode)||'Other',false);});hook.on('mousedown',e=>{if(QA&&process.argv.includes('--selftest'))return;input(e.button===1?'MouseLeft':e.button===2?'MouseRight':'MouseMiddle',true);});hook.on('mouseup',e=>{if(QA&&process.argv.includes('--selftest'))return;input(e.button===1?'MouseLeft':e.button===2?'MouseRight':'MouseMiddle',false);});hook.start();hookStatus='全局键盘与鼠标已连接';
  }catch(e){hookStatus='全局输入暂不可用，可点击桌宠互动';fs.appendFileSync(path.join(dataDir,'errors.log'),String(e)+'\n');}status();}
-ipcMain.handle('init',()=>({state,items,filters:require('./catalog.json').filters,status:{hook:hookStatus,warning:saveWarning},monitors:screen.getAllDisplays().map((d,i)=>({id:i,label:`屏幕 ${i+1} · ${d.size.width}×${d.size.height}`}))}));
+ipcMain.handle('init',()=>({state,items,version:require('./package.json').version,updateStatus,filters:require('./catalog.json').filters,status:{hook:hookStatus,warning:saveWarning},monitors:screen.getAllDisplays().map((d,i)=>({id:i,label:`屏幕 ${i+1} · ${d.size.width}×${d.size.height}`}))}));
 ipcMain.handle('command',async(_,name,arg)=>{try{let result=null;switch(name){
  case 'open':showStudio();if(arg){if(studio.webContents.isLoading())studio.webContents.once('did-finish-load',()=>setTimeout(()=>studio.webContents.send('page',arg),300));else studio.webContents.send('page',arg);}return {ok:true};
  case 'hide':studio?.hide();return{ok:true};
+ case 'update':if(QA)throw Error('测试环境不替换当前程序');return await update.run();
+ case 'unlock-all':result=core.unlockAll(state,items);break;
+ case 'custom-import':{if(state.customAccessories.length>=100)throw Error('最多导入 100 件自定义配件');const picked=await dialog.showOpenDialog(studio,{title:'导入自定义配件',properties:['openFile','dontAddToRecent'],filters:[{name:'JPG / PNG 图片',extensions:['jpg','jpeg','png']}]});if(picked.canceled||!picked.filePaths.length)return{ok:true,canceled:true};const added=await customAssets.importFile(picked.filePaths[0],dataDir,nativeImage);state.customAccessories.push(added);state.customAccessory=added.id;result=added;break;}
+ case 'custom-equip':if(arg!==''&&!state.customAccessories.some(x=>x.id===arg))throw Error('配件不存在');state.customAccessory=arg;if(!arg)state.accessory='';break;
+ case 'accessory-layout':{const current=accessories.view(state,items);if(!current||current.id!==arg?.id||state.character!==arg.character)throw Error('当前搭配已更换，请重新调整');const k=accessories.key(state.character,current.id);if(arg.reset)delete state.accessoryLayouts[k];else state.accessoryLayouts[k]=accessories.layout(arg.layout);break;}
  case 'draw':result=core.draw(state,items,arg);break;
  case 'synthesize':result=core.synthesize(state,items,arg.n,arg.rarity,Math.random,arg);break;
  case 'equip':core.equip(state,items,arg);break;
  case 'emote-replace':core.replaceEmote(state,items,arg.id,arg.slot);break;
  case 'window':studioWindow(arg);return{ok:true};
  case 'favorite':if(!items.some(x=>x.id===arg))throw Error('物品不存在');state.favorites=state.favorites.includes(arg)?state.favorites.filter(x=>x!==arg):[...state.favorites,arg];break;
- case 'preset-save':{const label=String(arg||'我的搭配').trim().slice(0,24);if(state.presets.length>=12)throw Error('最多保存 12 套搭配');state.presets.push({id:Date.now().toString(36),name:label,character:state.character,accessory:state.accessory,emotes:[...state.emotes]});break;}
- case 'preset-load':{const p=state.presets.find(x=>x.id===arg);if(!p)throw Error('搭配不存在');state.character=p.character;state.accessory=p.accessory;state.emotes=[...p.emotes];break;}
+ case 'preset-save':{const label=String(arg||'我的搭配').trim().slice(0,24);if(state.presets.length>=12)throw Error('最多保存 12 套搭配');state.presets.push({id:Date.now().toString(36),name:label,character:state.character,accessory:state.accessory,customAccessory:state.customAccessory,accessoryLayouts:structuredClone(state.accessoryLayouts),emotes:[...state.emotes]});break;}
+ case 'preset-load':{const p=state.presets.find(x=>x.id===arg);if(!p)throw Error('搭配不存在');state.character=p.character;state.accessory=p.accessory;state.customAccessory=p.customAccessory||'';state.accessoryLayouts={...state.accessoryLayouts,...(p.accessoryLayouts||{})};state.emotes=[...p.emotes];break;}
  case 'preset-delete':state.presets=state.presets.filter(x=>x.id!==arg);break;
  case 'emote':if(!state.owned[arg]||!items.some(x=>x.id===arg&&x.type==='emote'))throw Error('表情未获得');pet.webContents.send('emote',arg);return{ok:true};
  case 'settings':{pressed.clear();const old=state.settings;const next=core.settings({...old,...arg});if(next.autoStart!==old.autoStart){if(!app.isPackaged&&next.autoStart)throw Error('请从便携版开启开机启动');setAutoStart(next.autoStart);}state.settings=next;applySettings();if(next.scale!==old.scale||next.monitor!==old.monitor)place();break;}
@@ -76,6 +85,7 @@ ipcMain.on('resize-studio',(event,edge,dx,dy)=>{if(!studio||event.sender!==studi
 if(!primaryInstance){app.quit();}else{
 app.on('second-instance',()=>{pet?.show();showStudio();});
 app.whenReady().then(async()=>{
+ protocol.handle('wuwa-asset',async request=>{const file=customAssets.assetPath(request.url,dataDir,state.customAccessories);if(!file)return new Response(null,{status:404});try{return new Response(await fs.promises.readFile(file),{headers:{'Content-Type':'image/png'}});}catch{return new Response(null,{status:404});}});
  session.defaultSession.webRequest.onBeforeRequest({urls:['http://*/*','https://*/*','ws://*/*','wss://*/*']},(details,callback)=>callback({cancel:true}));
  session.defaultSession.setPermissionRequestHandler((_,__,callback)=>callback(false));
  pet=new BrowserWindow({width:320,height:350,transparent:true,frame:false,resizable:false,skipTaskbar:true,hasShadow:false,alwaysOnTop:true,title:'Wuwa Tappo 离线版 · 桌宠',webPreferences:{preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true,offscreen:SELFTEST,backgroundThrottling:false}});
@@ -83,9 +93,9 @@ app.whenReady().then(async()=>{
  const icon=nativeImage.createFromPath(path.join(__dirname,items.find(x=>x.starter&&x.type==='character').thumbnail)).resize({width:24,height:24});tray=new Tray(icon);tray.setToolTip('Wuwa Tappo 离线版 · 离线桌宠');tray.setContextMenu(menu());tray.on('double-click',showStudio);
  globalShortcut.register('CommandOrControl+Alt+P',()=>{state.settings.passthrough=!state.settings.passthrough;applySettings();save();broadcast();});
  globalShortcut.register('F7',()=>{state.settings.gameMode=false;applySettings();save();broadcast();});globalShortcut.register('F8',()=>{state.settings.monitor=(state.settings.monitor+1)%screen.getAllDisplays().length;place();save();broadcast();});
- screen.on('display-removed',()=>place());screen.on('display-metrics-changed',()=>place());startHook();save();if(QA||process.argv.includes('--studio')||state.draws===0&&state.presets.length===0)showStudio();
+ screen.on('display-removed',()=>place());screen.on('display-metrics-changed',()=>place());startHook();save();if(!QA)pet.webContents.once('did-finish-load',async()=>{for(let i=0;i<60;i++){if(await pet.webContents.executeJavaScript('typeof window.__petTest==="function"&&window.__petTest().loaded').catch(()=>false)){updater.ready(dataDir,process.argv,require('./package.json').version);break;}await new Promise(r=>setTimeout(r,250));}});if(QA||process.argv.includes('--studio')||state.draws===0&&state.presets.length===0)showStudio();
  if(SELFTEST||DRAGTEST){for(const w of [pet,studio]){w.hide();w.show=()=>{};w.showInactive=()=>{};w.focus=()=>{};}}
- if(QA){global.__QA={state:()=>state,pet:()=>pet,studio:()=>studio,hook:()=>hookStatus,input};if(process.argv.includes('--selftest'))require(DRAGTEST?'./qa-drag.cjs':'./qa.cjs')({app,pet,studio,items,getState:()=>state,save,dataDir,input});}
+ if(QA){global.__QA={state:()=>state,pet:()=>pet,studio:()=>studio,hook:()=>hookStatus,input,importAccessory:async file=>{const added=await customAssets.importFile(file,dataDir,nativeImage);state.customAccessories.push(added);state.customAccessory=added.id;await save();broadcast();return added;}};if(process.argv.includes('--selftest'))require(DRAGTEST?'./qa-drag.cjs':'./qa.cjs')({app,pet,studio,items,getState:()=>state,save,dataDir,input});}
 });
 app.on('before-quit',e=>{if(quitting)return;e.preventDefault();quitting=true;clearTimeout(saveTimer);clearInterval(topTimer);clearInterval(pointerTimer);try{hook?.stop();}catch{}globalShortcut.unregisterAll();save().finally(()=>app.quit());});
 app.on('window-all-closed',()=>app.quit());}
