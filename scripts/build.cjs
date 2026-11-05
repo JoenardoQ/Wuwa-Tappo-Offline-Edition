@@ -12,7 +12,7 @@ fs.renameSync(path.join(out,platform.binary),path.join(out,platform.name));
 if(target==='linux-x64'){const launcher=path.join(out,'WuwaTappo-Offline.sh');fs.copyFileSync(path.join(root,'scripts/linux/WuwaTappo-Offline.sh'),launcher);for(const file of [launcher,path.join(out,platform.name),path.join(out,'chrome_crashpad_handler')])if(fs.existsSync(file))fs.chmodSync(file,0o755);}
 const defaultApp=path.join(out,'resources/default_app.asar');if(fs.existsSync(defaultApp))fs.unlinkSync(defaultApp);
 const appDir=path.join(out,'resources/app');fs.mkdirSync(appDir,{recursive:true});
-const files=['accessories.js','accessory-editor.js','custom-assets.cjs','updater.cjs','update-extract.ps1','update-install.ps1','update-install.sh','main.cjs','preload.cjs','core.cjs','storage.cjs','autostart.cjs','pet.html','pet.css','pet.js','emotions.js','studio.html','studio.css','studio.js','catalog.json','asset-manifest.json','package.json','qa.cjs','qa-drag.cjs'];
+const files=['accessories.js','accessory-editor.js','custom-assets.cjs','updater.cjs','update-start.ps1','update-extract.ps1','update-install.ps1','update-install.sh','main.cjs','preload.cjs','core.cjs','storage.cjs','autostart.cjs','pet.html','pet.css','pet.js','emotions.js','studio.html','studio.css','studio.js','catalog.json','asset-manifest.json','package.json','qa.cjs','qa-drag.cjs'];
 for(const file of files)fs.copyFileSync(path.join(root,file),path.join(appDir,file));
 for(const dir of ['assets','original-ui'])fs.cpSync(path.join(root,dir),path.join(appDir,dir),{recursive:true});
 for(const dependency of ['uiohook-napi','node-gyp-build'])fs.cpSync(path.join(root,'node_modules',dependency),path.join(appDir,'node_modules',dependency),{recursive:true});
